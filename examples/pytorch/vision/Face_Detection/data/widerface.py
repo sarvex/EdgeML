@@ -45,9 +45,9 @@ class WIDERDetection(data.Dataset):
                     continue
                 box.append([x, y, x + w, y + h])
                 label.append(c)
-            if len(box) > 0:
+            if box:
                 if is_scut==True:
-                    self.fnames.append(SCUT_ROOT + '/' + line[0])
+                    self.fnames.append(f'{SCUT_ROOT}/{line[0]}')
                 else:
                     self.fnames.append(line[0])
                 self.boxes.append(box)

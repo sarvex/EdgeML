@@ -124,8 +124,7 @@ def match(threshold, truths, priors, variances, labels, loc_t, conf_t, idx):
     stage2_overlap = stage2_overlap.gt(_th1)
 
     if N > 0:
-        N = torch.sum(stage2_overlap[:N]) if torch.sum(
-            stage2_overlap[:N]) < N else N
+        N = min(torch.sum(stage2_overlap[:N]), N)
         conf[stage2_idx[:N]] += 1
 
     loc = encode(matches, priors, variances)

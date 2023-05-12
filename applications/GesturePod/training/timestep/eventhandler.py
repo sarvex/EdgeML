@@ -28,7 +28,7 @@ class BasicEventHandler:
 
     def registerEvent(self, key, callback):
         if key in self.eventCallbackDict:
-            raise ValueError("An event already registerd for %s" % key)
+            raise ValueError(f"An event already registerd for {key}")
         self.eventCallbackDict[key] = callback
 
     def deregisterEvent(self, key):
@@ -44,10 +44,7 @@ class BasicEventHandler:
         plt.pause(self.delay)
 
     def setExitOnCloseEvent(self, val):
-        if val:
-            self.exitOnCloseEvent = True
-        else:
-            self.exitOnCloseEvent = False
+        self.exitOnCloseEvent = bool(val)
         return self.exitOnCloseEvent
 
     def handleQueuedEvents(self):

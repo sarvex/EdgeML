@@ -68,6 +68,4 @@ class RNNPool(nn.Module):
 
 
 
-        output = torch.cat([outputs_rows[-1],outputs_cols[-1]],1)
-
-        return output
+        return torch.cat([outputs_rows[-1],outputs_cols[-1]],1)

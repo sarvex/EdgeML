@@ -7,7 +7,7 @@ import numpy as np
 
 
 def min_max(A, name):
-    print(name + " has max: " + str(np.max(A)) + " min: " + str(np.min(A)))
+    print(f"{name} has max: {str(np.max(A))} min: {str(np.min(A))}")
     return np.max([np.abs(np.max(A)), np.abs(np.min(A))])
 
 
@@ -18,14 +18,16 @@ def quantizeBonsaiModels(modelDir, maxValue=127, scalarScaleFactor=1000):
     paramLimitList = []
 
     for file in ls:
-        if file.endswith("npy"):
-            if file.startswith("mean") or file.startswith("std") or file.startswith("hyperParam"):
-                continue
-            else:
-                paramNameList.append(file)
-                temp = np.load(modelDir + "/" + file)
-                paramWeightList.append(temp)
-                paramLimitList.append(min_max(temp, file))
+        if (
+            file.endswith("npy")
+            and not file.startswith("mean")
+            and not file.startswith("std")
+            and not file.startswith("hyperParam")
+        ):
+            paramNameList.append(file)
+            temp = np.load(f"{modelDir}/{file}")
+            paramWeightList.append(temp)
+            paramLimitList.append(min_max(temp, file))
 
     paramLimit = np.max(paramLimitList)
 
@@ -46,19 +48,20 @@ def quantizeBonsaiModels(modelDir, maxValue=127, scalarScaleFactor=1000):
 
         quantParamWeights.append(temp)
 
-    if os.path.isdir(modelDir + '/QuantizedTFBonsaiModel') is False:
+    if os.path.isdir(f'{modelDir}/QuantizedTFBonsaiModel') is False:
         try:
-            os.mkdir(modelDir + '/QuantizedTFBonsaiModel')
-            quantModelDir = modelDir + '/QuantizedTFBonsaiModel'
+            os.mkdir(f'{modelDir}/QuantizedTFBonsaiModel')
+            quantModelDir = f'{modelDir}/QuantizedTFBonsaiModel'
         except OSError:
-            print("Creation of the directory %s failed" %
-                  modelDir + '/QuantizedTFBonsaiModel')
+            print(f"Creation of the directory {modelDir} failed/QuantizedTFBonsaiModel")
 
-    np.save(quantModelDir + "/paramScaleFactor.npy",
-            paramScaleFactor.astype('int32'))
+    np.save(
+        f"{quantModelDir}/paramScaleFactor.npy",
+        paramScaleFactor.astype('int32'),
+    )
 
     for i in range(len(paramNameList)):
-        np.save(quantModelDir + "/q" + paramNameList[i], quantParamWeights[i])
+        np.save(f"{quantModelDir}/q{paramNameList[i]}", quantParamWeights[i])
 
     print("\n\nQuantized Model Dir: " + quantModelDir)
 

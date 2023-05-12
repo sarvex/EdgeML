@@ -84,13 +84,13 @@ class BooleanPlotter():
         if initValues is None:
             initValues = np.random.rand(length)
         self.setValues(initValues)
-        if not ('linestyle' in kwargs or 'ls' in kwargs):
+        if 'linestyle' not in kwargs and 'ls' not in kwargs:
             kwargs['linestyle'] = 'None'
-        if not ('markersize' in kwargs or 'ms' in kwargs):
+        if 'markersize' not in kwargs and 'ms' not in kwargs:
             kwargs['markersize'] = 10.00
-        if not ('marker' in kwargs):
+        if 'marker' not in kwargs:
             kwargs['marker'] = 'o'
-        if not ('color' in kwargs or 'c' in kwargs):
+        if 'color' not in kwargs and 'c' not in kwargs:
             kwargs['color'] = 'r'
         self.line, = self.ax.plot(self.values, **kwargs)
 

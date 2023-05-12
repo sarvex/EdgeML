@@ -20,11 +20,11 @@ if __name__ == '__main__':
     ## End Config
 
     print("Processing data")
-    path = workingDir + '/' + downloadDir
+    path = f'{workingDir}/{downloadDir}'
     path = os.path.abspath(path)
     extractedDir = generateData(path)
 
-    rawDir = extractedDir + '/RAW/'
+    rawDir = f'{extractedDir}/RAW/'
     print("Extracting features")
     sourceDir = rawDir
     outDir = extractedDir + '/%d_%d/' % (subinstanceLen, subinstanceStride)
@@ -37,7 +37,7 @@ if __name__ == '__main__':
     try:
         os.mkdir(outDir)
     except OSError:
-        exit("Could not create %s" % outDir)
+        exit(f"Could not create {outDir}")
     assert len(os.listdir(outDir)) == 0
     makeEMIData(subinstanceLen, subinstanceStride, sourceDir, outDir)
     print("Done")

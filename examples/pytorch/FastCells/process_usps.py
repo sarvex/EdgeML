@@ -20,16 +20,16 @@ def processData(workingDir, downloadDir):
         retMat[:, 1:] = features.todense()
         return retMat
 
-    path = workingDir + '/' + downloadDir
+    path = f'{workingDir}/{downloadDir}'
     path = os.path.abspath(path)
-    trf = path + '/train.txt'
-    tsf = path + '/test.txt'
-    assert os.path.isfile(trf), 'File not found: %s' % trf
-    assert os.path.isfile(tsf), 'File not found: %s' % tsf
+    trf = f'{path}/train.txt'
+    tsf = f'{path}/test.txt'
+    assert os.path.isfile(trf), f'File not found: {trf}'
+    assert os.path.isfile(tsf), f'File not found: {tsf}'
     train = loadLibSVMFile(trf)
     test = loadLibSVMFile(tsf)
-    np.save(path + '/train.npy', train)
-    np.save(path + '/test.npy', test)
+    np.save(f'{path}/train.npy', train)
+    np.save(f'{path}/test.npy', test)
 
 if __name__ == '__main__':
     # Configuration

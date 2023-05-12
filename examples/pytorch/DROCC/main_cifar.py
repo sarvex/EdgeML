@@ -26,8 +26,8 @@ class CIFAR10_LeNet(nn.Module):
         self.conv3 = nn.Conv2d(64, 128, 5, bias=False, padding=2)
         self.bn2d3 = nn.BatchNorm2d(128, eps=1e-04, affine=False)
         self.fc1 = nn.Linear(128 * 4 * 4, self.rep_dim, bias=False)
-        self.fc2 = nn.Linear(self.rep_dim, int(self.rep_dim/2), bias=False)
-        self.fc3 = nn.Linear(int(self.rep_dim/2), 1, bias=False)
+        self.fc2 = nn.Linear(self.rep_dim, self.rep_dim // 2, bias=False)
+        self.fc3 = nn.Linear(self.rep_dim // 2, 1, bias=False)
 
     def forward(self, x):
         x = self.conv1(x)
@@ -84,7 +84,7 @@ def main():
         optimizer = optim.Adam(model.parameters(),
                                lr=args.lr)
         print("using Adam")
-    
+
     trainer = DROCCTrainer(model, optimizer, args.lamda, args.radius, args.gamma, device)
 
     if args.eval == 0:
@@ -93,7 +93,7 @@ def main():
             metric=args.metric, ascent_step_size=args.ascent_step_size, only_ce_epochs = 0)
 
         trainer.save(args.model_dir)
-        
+
     else:
         if os.path.exists(os.path.join(args.model_dir, 'model.pt')):
             trainer.load(args.model_dir)
@@ -102,7 +102,7 @@ def main():
             print('Saved model not found. Cannot run evaluation.')
             exit()
         score = trainer.test(test_loader, 'AUC')
-        print('Test AUC: {}'.format(score))
+        print(f'Test AUC: {score}')
 
 if __name__ == '__main__':
     torch.set_printoptions(precision=5)

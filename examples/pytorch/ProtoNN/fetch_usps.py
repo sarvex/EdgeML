@@ -13,22 +13,22 @@ def downloadData(workingDir, downloadDir, linkTrain, linkTest):
     def runcommand(command):
         p = subprocess.Popen(command.split(), stdout=subprocess.PIPE)
         output, error = p.communicate()
-        assert(p.returncode == 0), 'Command failed: %s' % command
+        assert (p.returncode == 0), f'Command failed: {command}'
 
-    path = workingDir + '/' + downloadDir
+    path = f'{workingDir}/{downloadDir}'
     path = os.path.abspath(path)
     try:
         os.mkdir(path)
     except OSError:
-        print("Could not create %s. Make sure the path does" % path)
+        print(f"Could not create {path}. Make sure the path does")
         print("not already exist and you have permisions to create it.")
         return False
     cwd = os.getcwd()
     os.chdir(path)
     print("Downloading data")
-    command = 'wget %s' % linkTrain
+    command = f'wget {linkTrain}'
     runcommand(command)
-    command = 'wget %s' % linkTest
+    command = f'wget {linkTest}'
     runcommand(command)
     print("Extracting data")
     command = 'bzip2 -d usps.bz2'

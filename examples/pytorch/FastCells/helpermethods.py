@@ -34,7 +34,7 @@ def download_file(url, local_folder=None):
         filename = os.path.join(local_folder, filename)
 
     # Download the file
-    print("Downloading: " + url)
+    print(f"Downloading: {url}")
     response = requests.get(url, stream=True)
     if response.status_code != 200:
         raise Exception("download file failed with status code: %d, fetching url '%s'" % (response.status_code, url))
@@ -48,32 +48,28 @@ def download_file(url, local_folder=None):
 def checkIntPos(value):
     ivalue = int(value)
     if ivalue <= 0:
-        raise argparse.ArgumentTypeError(
-            "%s is an invalid positive int value" % value)
+        raise argparse.ArgumentTypeError(f"{value} is an invalid positive int value")
     return ivalue
 
 
 def checkIntNneg(value):
     ivalue = int(value)
     if ivalue < 0:
-        raise argparse.ArgumentTypeError(
-            "%s is an invalid non-neg int value" % value)
+        raise argparse.ArgumentTypeError(f"{value} is an invalid non-neg int value")
     return ivalue
 
 
 def checkFloatNneg(value):
     fvalue = float(value)
     if fvalue < 0:
-        raise argparse.ArgumentTypeError(
-            "%s is an invalid non-neg float value" % value)
+        raise argparse.ArgumentTypeError(f"{value} is an invalid non-neg float value")
     return fvalue
 
 
 def checkFloatPos(value):
     fvalue = float(value)
     if fvalue <= 0:
-        raise argparse.ArgumentTypeError(
-            "%s is an invalid positive float value" % value)
+        raise argparse.ArgumentTypeError(f"{value} is an invalid positive float value")
     return fvalue
 
 
@@ -179,21 +175,23 @@ def createTimeStampDir(dataDir, cell):
     '''
     Creates a Directory with timestamp as it's name
     '''
-    if os.path.isdir(os.path.join(dataDir, str(cell) + 'Results')) is False:
+    if os.path.isdir(os.path.join(dataDir, f'{str(cell)}Results')) is False:
         try:
-            os.mkdir(os.path.join(dataDir, str(cell) + 'Results'))
+            os.mkdir(os.path.join(dataDir, f'{str(cell)}Results'))
         except OSError:
-            print("Creation of the directory %s failed" %
-                  os.path.join(dataDir, str(cell) + 'Results'))
+            print(
+                f"Creation of the directory {os.path.join(dataDir, f'{str(cell)}Results')} failed"
+            )
 
-    currDir = os.path.join(str(cell) + 'Results',
-        datetime.datetime.now().strftime("%Y-%m-%dT%H-%M-%S"))
+    currDir = os.path.join(
+        f'{str(cell)}Results',
+        datetime.datetime.now().strftime("%Y-%m-%dT%H-%M-%S"),
+    )
     if os.path.isdir(os.path.join(dataDir, currDir)) is False:
         try:
             os.mkdir(os.path.join(dataDir, currDir))
         except OSError:
-            print("Creation of the directory %s failed" %
-                  os.path.join(dataDir, currDir))
+            print(f"Creation of the directory {os.path.join(dataDir, currDir)} failed")
         else:
             return (os.path.join(dataDir, currDir))
     return None
@@ -254,14 +252,13 @@ def dumpCommand(list, currDir):
     '''
     Dumps the current command to a file for further use
     '''
-    commandFile = open(os.path.join(currDir, 'command.txt'), 'w')
-    command = "python"
+    with open(os.path.join(currDir, 'command.txt'), 'w') as commandFile:
+        command = "python"
 
-    command = command + " " + ' '.join(list)
-    commandFile.write(command)
+        command = f"{command} " + ' '.join(list)
+        commandFile.write(command)
 
-    commandFile.flush()
-    commandFile.close()
+        commandFile.flush()
 
 
 def saveMeanStd(mean, std, currDir):

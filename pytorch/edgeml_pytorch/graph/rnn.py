@@ -14,7 +14,6 @@ try:
         import fastgrnn_cuda
 except:
     print("Running without FastGRNN CUDA")
-    pass
 
 
 # All the matrix vector computations of the form Wx are done 
@@ -173,7 +172,7 @@ class RNNCell(nn.Module):
         mats = self.getVars()
         num_mats = self._num_W_matrices + self._num_U_matrices
         if len(self.oldmats) != num_mats:
-            for i in range(num_mats):
+            for _ in range(num_mats):
                 self.oldmats.append(torch.FloatTensor())
         for i in range(num_mats):
             self.oldmats[i] = torch.FloatTensor(mats[i].detach().clone().to(mats[i].device))
@@ -295,10 +294,10 @@ class FastGRNNCell(RNNCell):
                               self._gate_nonlinearity)
         c = gen_nonlinearity(pre_comp + self.bias_update,
                               self._update_nonlinearity)
-        new_h = z * state + (torch.sigmoid(self.zeta) *
-                             (1.0 - z) + torch.sigmoid(self.nu)) * c
-
-        return new_h
+        return (
+            z * state
+            + (torch.sigmoid(self.zeta) * (1.0 - z) + torch.sigmoid(self.nu)) * c
+        )
 
     def getVars(self):
         Vars = []
@@ -312,8 +311,7 @@ class FastGRNNCell(RNNCell):
         else:
             Vars.extend([self.U1, self.U2])
 
-        Vars.extend([self.bias_gate, self.bias_update])
-        Vars.extend([self.zeta, self.nu])
+        Vars.extend([self.bias_gate, self.bias_update, self.zeta, self.nu])
         return Vars
 
 class FastGRNNCUDACell(RNNCell):
@@ -507,10 +505,7 @@ class FastRNNCell(RNNCell):
 
         c = gen_nonlinearity(pre_comp + self.bias_update,
                               self._update_nonlinearity)
-        new_h = torch.sigmoid(self.beta) * state + \
-            torch.sigmoid(self.alpha) * c
-
-        return new_h
+        return torch.sigmoid(self.beta) * state + torch.sigmoid(self.alpha) * c
 
     def getVars(self):
         Vars = []
@@ -524,9 +519,7 @@ class FastRNNCell(RNNCell):
         else:
             Vars.extend([self.U1, self.U2])
 
-        Vars.extend([self.bias_update])
-        Vars.extend([self.alpha, self.beta])
-
+        Vars.extend([self.bias_update, self.alpha, self.beta])
         return Vars
 
 
@@ -815,13 +808,12 @@ class GRULRCell(RNNCell):
             pre_comp3 = wComp3 + torch.matmul(r * state, self.U3)
         else:
             pre_comp3 = wComp3 + \
-                torch.matmul(torch.matmul(r * state, self.U), self.U3)
+                    torch.matmul(torch.matmul(r * state, self.U), self.U3)
 
         c = gen_nonlinearity(pre_comp3 + self.bias_update,
                               self._update_nonlinearity)
 
-        new_h = z * state + (1.0 - z) * c
-        return new_h
+        return z * state + (1.0 - z) * c
 
     def getVars(self):
         Vars = []
@@ -943,8 +935,7 @@ class UGRNNLRCell(RNNCell):
         c = gen_nonlinearity(pre_comp2 + self.bias_update,
                               self._update_nonlinearity)
 
-        new_h = z * state + (1.0 - z) * c
-        return new_h
+        return z * state + (1.0 - z) * c
 
     def getVars(self):
         Vars = []
@@ -1028,10 +1019,14 @@ class BaseRNN(nn.Module):
                             input[:, input.shape[1]-i-1, :], (hiddenState[1].clone(), cellState[1].clone()))
                         hiddenStates_reverse[:, i, :] = hiddenState[1]
                         cellStates_reverse[:, i, :] = cellState[1]
-                if not self._bidirectional:
-                    return hiddenStates, cellStates
-                else:
-                    return torch.cat([hiddenStates,hiddenStates_reverse],-1), torch.cat([cellStates,cellStates_reverse],-1)  
+                return (
+                    (hiddenStates, cellStates)
+                    if not self._bidirectional
+                    else (
+                        torch.cat([hiddenStates, hiddenStates_reverse], -1),
+                        torch.cat([cellStates, cellStates_reverse], -1),
+                    )
+                )
             else:
                 for i in range(0, input.shape[1]):
                     hiddenState[0] = self.RNNCell(input[:, i, :], hiddenState[0].clone())
@@ -1044,44 +1039,43 @@ class BaseRNN(nn.Module):
                     return hiddenStates
                 else:
                     return torch.cat([hiddenStates,hiddenStates_reverse],-1)
-        else:
-            if self.RNNCell.cellType == "LSTMLR":
-                cellStates = torch.zeros(
-                    [input.shape[0], input.shape[1],
-                     self.RNNCell.output_size]).to(self.device)
+        elif self.RNNCell.cellType == "LSTMLR":
+            cellStates = torch.zeros(
+                [input.shape[0], input.shape[1],
+                 self.RNNCell.output_size]).to(self.device)
+            if self._bidirectional:
+                cellStates_reverse = torch.zeros(
+                [input.shape[0], input.shape[1],
+                 self.RNNCell_reverse.output_size]).to(self.device)
+            if cellState is None:
+                cellState = torch.zeros(
+                    [self.num_directions, input.shape[1], self.RNNCell.output_size]).to(self.device)
+            for i in range(0, input.shape[0]):
+                hiddenState[0], cellState[0] = self.RNNCell(
+                    input[i, :, :], (hiddenState[0].clone(), cellState[0].clone()))
+                hiddenStates[i, :, :] = hiddenState[0]
+                cellStates[i, :, :] = cellState[0]
                 if self._bidirectional:
-                    cellStates_reverse = torch.zeros(
-                    [input.shape[0], input.shape[1],
-                     self.RNNCell_reverse.output_size]).to(self.device)
-                if cellState is None:
-                    cellState = torch.zeros(
-                        [self.num_directions, input.shape[1], self.RNNCell.output_size]).to(self.device)
-                for i in range(0, input.shape[0]):
-                    hiddenState[0], cellState[0] = self.RNNCell(
-                        input[i, :, :], (hiddenState[0].clone(), cellState[0].clone()))
-                    hiddenStates[i, :, :] = hiddenState[0]
-                    cellStates[i, :, :] = cellState[0]
-                    if self._bidirectional:
-                        hiddenState[1], cellState[1] = self.RNNCell_reverse(
-                            input[input.shape[0]-i-1, :, :], (hiddenState[1].clone(), cellState[1].clone()))
-                        hiddenStates_reverse[i, :, :] = hiddenState[1]
-                        cellStates_reverse[i, :, :] = cellState[1]
-                if not self._bidirectional:
-                    return hiddenStates, cellStates
-                else:
-                    return torch.cat([hiddenStates,hiddenStates_reverse],-1), torch.cat([cellStates,cellStates_reverse],-1)
+                    hiddenState[1], cellState[1] = self.RNNCell_reverse(
+                        input[input.shape[0]-i-1, :, :], (hiddenState[1].clone(), cellState[1].clone()))
+                    hiddenStates_reverse[i, :, :] = hiddenState[1]
+                    cellStates_reverse[i, :, :] = cellState[1]
+            if not self._bidirectional:
+                return hiddenStates, cellStates
             else:
-                for i in range(0, input.shape[0]):
-                    hiddenState[0] = self.RNNCell(input[i, :, :], hiddenState[0].clone())
-                    hiddenStates[i, :, :] = hiddenState[0]
-                    if self._bidirectional:
-                        hiddenState[1] = self.RNNCell_reverse(
-                            input[input.shape[0]-i-1, :, :], hiddenState[1].clone())
-                        hiddenStates_reverse[i, :, :] = hiddenState[1]
-                if not self._bidirectional:
-                    return hiddenStates
-                else:
-                    return torch.cat([hiddenStates,hiddenStates_reverse],-1)
+                return torch.cat([hiddenStates,hiddenStates_reverse],-1), torch.cat([cellStates,cellStates_reverse],-1)
+        else:
+            for i in range(0, input.shape[0]):
+                hiddenState[0] = self.RNNCell(input[i, :, :], hiddenState[0].clone())
+                hiddenStates[i, :, :] = hiddenState[0]
+                if self._bidirectional:
+                    hiddenState[1] = self.RNNCell_reverse(
+                        input[input.shape[0]-i-1, :, :], hiddenState[1].clone())
+                    hiddenStates_reverse[i, :, :] = hiddenState[1]
+            if not self._bidirectional:
+                return hiddenStates
+            else:
+                return torch.cat([hiddenStates,hiddenStates_reverse],-1)
 
 
 class LSTM(nn.Module):
@@ -1319,10 +1313,7 @@ class FastGRNNCUDA(nn.Module):
             hiddenState = hiddenState.to(self.device)
         result = FastGRNNUnrollFunction.apply(input, self.bias_gate, self.bias_update, self.zeta, self.nu, hiddenState,
             self.W, self.U, self.W1, self.W2, self.U1, self.U2, self._gate_non_linearity)
-        if self.batch_first is True:
-            return result.transpose(0, 1)
-        else:
-            return result
+        return result.transpose(0, 1) if self.batch_first is True else result
 
     def getVars(self):
         Vars = []
@@ -1366,7 +1357,7 @@ class FastGRNNCUDA(nn.Module):
         mats = self.getVars()
         num_mats = self._num_W_matrices + self._num_U_matrices
         if len(self.oldmats) != num_mats:
-            for i in range(num_mats):
+            for _ in range(num_mats):
                 self.oldmats.append(torch.FloatTensor())
         for i in range(num_mats):
             self.oldmats[i] = torch.FloatTensor(mats[i].detach().clone().to(mats[i].device))
@@ -1414,22 +1405,17 @@ class SRNN2(nn.Module):
             assert 0 < dropoutProbability0 <= 1.0
         if dropoutProbability1 != None:
             assert 0 < dropoutProbability1 <= 1.0
-        # Setting batch_first = False to ensure compatibility of parameters across nn.LSTM and the
-        # other low-rank implementations
-        self.cellArgs = {
-            'batch_first': False
-        }
-        self.cellArgs.update(cellArgs)
+        self.cellArgs = {'batch_first': False} | cellArgs
         supportedCells = ['LSTM', 'FastRNNCell', 'FastGRNNCell', 'GRULRCell']
         assert cellType in supportedCells, 'Currently supported cells: %r' % supportedCells
         self.cellType = cellType
 
-        if self.cellType == 'LSTM':
-            self.rnnClass = nn.LSTM
+        if self.cellType == 'FastGRNNCell':
+            self.rnnClass = FastGRNN
         elif self.cellType == 'FastRNNCell':
             self.rnnClass = FastRNN
-        elif self.cellType == 'FastGRNNCell':
-            self.rnnClass = FastGRNN
+        elif self.cellType == 'LSTM':
+            self.rnnClass = nn.LSTM
         else:
             self.rnnClass = GRU
 
@@ -1503,8 +1489,7 @@ class SRNN2(nn.Module):
             self.dropoutLayer1 = nn.Dropout(p=self.dropoutProbability1)
             hidd1 = self.dropoutLayer1(hidd1)
         hidd1 = torch.squeeze(hidd1[-1])
-        out = torch.matmul(hidd1, self.W) + self.B
-        return out
+        return torch.matmul(hidd1, self.W) + self.B
 
 class FastGRNNFunction(Function):
     @staticmethod

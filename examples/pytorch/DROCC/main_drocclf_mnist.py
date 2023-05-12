@@ -78,11 +78,7 @@ class CustomDataset(Dataset):
         return torch.from_numpy(self.data[idx]), (self.labels[idx]), torch.tensor([0])
 
 def get_close_negs(test_loader):
-    # Getting the Close Negs data for MNIST Digit 0 by
-    # randomly masking 50% of the digit 0 test image pixels
-    batch_idx = -1
-    for data, target, _ in test_loader:
-        batch_idx += 1
+    for batch_idx, (data, target, _) in enumerate(test_loader):
         data, target = data.to(device), target.to(device)
         data = data.to(torch.float)
         target = target.to(torch.float)
@@ -92,14 +88,14 @@ def get_close_negs(test_loader):
         indices = np.random.choice(np.arange(torch.numel(aug1)), replace=False,
                            size=int(torch.numel(aug1) * 0.4))
         aug1[np.unravel_index(indices, np.shape(aug1))] = torch.min(data)
-        if batch_idx==0:
-            close_neg_data = aug1
-        else:
-            close_neg_data = torch.cat((close_neg_data,aug1), dim=0)
-
+        close_neg_data = (
+            aug1
+            if batch_idx == 0
+            else torch.cat((close_neg_data, aug1), dim=0)
+        )
     close_neg_data = close_neg_data.detach().cpu().numpy()
     close_neg_labels = np.zeros((close_neg_data.shape[0]))
-    
+
     return CustomDataset(close_neg_data, close_neg_labels)
 
 def main():
@@ -140,13 +136,15 @@ def main():
             exit()
         _, pos_scores, far_neg_scores  = trainer.test(test_loader, get_auc=False)
         _, _, close_neg_scores  = trainer.test(closeneg_test_loader, get_auc=False)
-        
+
         precision_fpr03, recall_fpr03 = cal_precision_recall(pos_scores, far_neg_scores, close_neg_scores, 0.03)
         precision_fpr05, recall_fpr05 = cal_precision_recall(pos_scores, far_neg_scores, close_neg_scores, 0.05)
-        print('Test Precision @ FPR 3% : {}, Recall @ FPR 3%: {}'.format(
-            precision_fpr03, recall_fpr03))
-        print('Test Precision @ FPR 5% : {}, Recall @ FPR 5%: {}'.format(
-            precision_fpr05, recall_fpr05))
+        print(
+            f'Test Precision @ FPR 3% : {precision_fpr03}, Recall @ FPR 3%: {recall_fpr03}'
+        )
+        print(
+            f'Test Precision @ FPR 5% : {precision_fpr05}, Recall @ FPR 5%: {recall_fpr05}'
+        )
 
 if __name__ == '__main__':
     torch.set_printoptions(precision=5)

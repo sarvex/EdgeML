@@ -32,8 +32,8 @@ def main():
     OUT_DIR = config.output_dir
 
     # Load data
-    train = np.load(DATA_DIR + '/train.npy')
-    test = np.load(DATA_DIR + '/test.npy')
+    train = np.load(f'{DATA_DIR}/train.npy')
+    test = np.load(f'{DATA_DIR}/test.npy')
     x_train, y_train = train[:, 1:], train[:, 0]
     x_test, y_test = test[:, 1:], test[:, 0]
     # Convert y to one-hot
@@ -77,10 +77,10 @@ def main():
     print("Actual model size: ", size)
     print("Actual non-zeros: ", nnz)
     print("Saving model matrices to: ", OUT_DIR)
-    np.save(OUT_DIR + '/W.npy', matrixList[0])
-    np.save(OUT_DIR + '/B.npy', matrixList[1])
-    np.save(OUT_DIR + '/Z.npy', matrixList[2])
-    np.save(OUT_DIR + '/gamma.npy', gamma)
+    np.save(f'{OUT_DIR}/W.npy', matrixList[0])
+    np.save(f'{OUT_DIR}/B.npy', matrixList[1])
+    np.save(f'{OUT_DIR}/Z.npy', matrixList[2])
+    np.save(f'{OUT_DIR}/gamma.npy', gamma)
 
 
 if __name__ == '__main__':

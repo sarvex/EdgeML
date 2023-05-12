@@ -129,7 +129,7 @@ class PredictionThread(Thread):
         count = 0
         prev_class = 0
         srnn_votes = []
-        fastgrnn_votes = []       
+        fastgrnn_votes = []
         while True:
             data = queue.get()
             queue.task_done()
@@ -137,7 +137,7 @@ class PredictionThread(Thread):
             r.extend(data)
             if count < 21:
                 continue
-            
+
             r = r[stride:]
             if save_file:
                 data = pack('<' + ('h'*len(r)), *r)
@@ -147,15 +147,12 @@ class PredictionThread(Thread):
             features = extract_features(data_np, numSteps, numFilt, samplerate, winlen, winstep)
             features = (features - mean) / std
             features = np.swapaxes(features, 0, 1)
- 
-            logits = fastgrnn(torch.FloatTensor(features))            
+
+            logits = fastgrnn(torch.FloatTensor(features))
             _, y = torch.max(logits, dim=1)
             if len(fastgrnn_votes) == num_windows:
                 fastgrnn_votes.pop(0)
-                fastgrnn_votes.append(y.item())
-            else:
-                fastgrnn_votes.append(y.item())
-            
+            fastgrnn_votes.append(y.item())
             if count % 10 == 0:
                 class_id = Counter(fastgrnn_votes).most_common(1)[0][0]
                 class_freq = Counter(fastgrnn_votes).most_common(1)[0][1]

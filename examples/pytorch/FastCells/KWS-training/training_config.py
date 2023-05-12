@@ -101,10 +101,7 @@ class TrainingConfig:
                 self.__dict__[name] = int(value)
             if type(t) == float:
                 self.__dict__[name] = float(value)
-            if type(t) == str:
-                self.__dict__[name] = str(value)
-            else:
-                self.__dict__[name] = value
+            self.__dict__[name] = str(value) if type(t) == str else value
 
     def load(self, filename):
         with open(filename, "r") as f:
@@ -125,8 +122,7 @@ class TrainingConfig:
     @staticmethod
     def to_dict(obj):
         data = dict(obj.__dict__)
-        for k in data:
-            o = data[k]
+        for k, o in data.items():
             if hasattr(o, "__dict__"):
                 data[k] = TrainingConfig.to_dict(o)
         return data
@@ -135,12 +131,9 @@ class TrainingConfig:
     def from_dict(obj, data):
         for k in data:
             v = data[k]
-            if not hasattr(obj, k):
-                setattr(obj, k, v)
+            if hasattr(obj, k) and isinstance(v, dict):
+                TrainingConfig.from_dict(getattr(obj, k), v)
+            elif hasattr(obj, k) and isinstance(getattr(obj, k), tuple):
+                setattr(obj, k, tuple(v))
             else:
-                if isinstance(v, dict):
-                    TrainingConfig.from_dict(getattr(obj, k), v)
-                elif isinstance(getattr(obj, k), tuple):
-                    setattr(obj, k, tuple(v))
-                else:
-                    setattr(obj, k, v)
+                setattr(obj, k, v)

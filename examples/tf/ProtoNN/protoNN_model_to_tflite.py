@@ -20,8 +20,8 @@ def main():
     OUT_DIR = config.output_dir
 
     # Load data
-    train = np.load(DATA_DIR + '/train.npy')
-    test = np.load(DATA_DIR + '/test.npy')
+    train = np.load(f'{DATA_DIR}/train.npy')
+    test = np.load(f'{DATA_DIR}/test.npy')
     x_train, y_train = train[:, 1:], train[:, 0]
     x_test, y_test = test[:, 1:], test[:, 0]
     # Convert y to one-hot
@@ -33,10 +33,10 @@ def main():
     y_test = helper.to_onehot(y_test, numClasses, minlabel=minval)
     dataDimension = x_train.shape[1]
 
-    W = np.load(OUT_DIR + '/W.npy')
-    B = np.load(OUT_DIR + '/B.npy')
-    Z = np.load(OUT_DIR + '/Z.npy')
-    gamma = np.load(OUT_DIR + '/gamma.npy')
+    W = np.load(f'{OUT_DIR}/W.npy')
+    B = np.load(f'{OUT_DIR}/B.npy')
+    Z = np.load(f'{OUT_DIR}/Z.npy')
+    gamma = np.load(f'{OUT_DIR}/gamma.npy')
 
     n_dim = inputDimension = W.shape[0]
     projectionDimension = W.shape[1]
@@ -44,7 +44,7 @@ def main():
     numOutputLabels = Z.shape[0]
 
     errmsg = 'Dimensions mismatch! Should be W[d, d_cap], B[d_cap, m] and Z[L,m]'
-    assert B.shape[0] == projectionDimension, errmsg 
+    assert B.shape[0] == projectionDimension, errmsg
     assert Z.shape[1] == numPrototypes, errmsg 
 
     dense = ProtoNNLayer( inputDimension, projectionDimension, numPrototypes, numOutputLabels, gamma )
@@ -73,13 +73,11 @@ def main():
     tflite_model = converter.convert()
 
     # Save the TF Lite model as file
-    out_tflite_model_file = OUT_DIR + '/protoNN_model.tflite'
-    f = open(out_tflite_model_file, "wb")
-    f.write(tflite_model)
-    f.close()
-
+    out_tflite_model_file = f'{OUT_DIR}/protoNN_model.tflite'
+    with open(out_tflite_model_file, "wb") as f:
+        f.write(tflite_model)
     # Delete any reference to existing models in order to avoid conflicts
-    del model 
+    del model
     del tflite_model
 
     # Prediction on an example input using tflite model we just saved

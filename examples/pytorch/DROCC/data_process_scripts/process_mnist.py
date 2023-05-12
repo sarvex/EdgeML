@@ -55,14 +55,14 @@ class MNIST_Dataset(TorchvisionDataset):
         #Loads only the digit 0 and digit 1 data
         # for both train and test 
         self.n_classes = 2  # 0: normal, 1: outlier
-        self.normal_classes = tuple([0])
-        self.train_classes = tuple([0,1])
-        self.test_class = tuple([0,1])
+        self.normal_classes = (0, )
+        self.train_classes = 0, 1
+        self.test_class = 0, 1
 
         transform = transforms.Compose([transforms.ToTensor(),
                                                 transforms.Normalize(mean=[0.1307],
                                                 std=[0.3081])])
-        
+
         target_transform = transforms.Lambda(lambda x: int(x in self.normal_classes))
 
         train_set = MyMNIST(root=self.root, train=True, download=True,

@@ -61,16 +61,14 @@ def check_left_part1(lam, grad, diff, radius, device):
     n1 = diff**2 * lam**2 * grad**2
     d1 = (1 + lam * grad)**2 + 1e-10
     term = n1/d1
-    term_sum = torch.sum(term)
-    return term_sum
+    return torch.sum(term)
 
 def check_left_part2(nu, grad, diff, radius, device, gamma):
     #Part 2 condition value
     n1 = diff**2 * grad**2
     d1 = (nu + grad)**2 + 1e-10
     term = n1/d1
-    term_sum = torch.sum(term)
-    return term_sum
+    return torch.sum(term)
 
 def check_right_part1(lam, grad, diff, radius, device):
     #Check if 'such that' condition is true in proposition 1 part 1
@@ -106,8 +104,7 @@ def range_nu_upper(grad, mhlnbs_dis, radius, gamma):
     #Gridsearch range for nu
     alpha = (gamma*radius)/mhlnbs_dis
     max_sigma, _ = torch.max(grad, dim=1)
-    nu = (alpha/(1-alpha))*max_sigma
-    return nu
+    return (alpha/(1-alpha))*max_sigma
 
 def optim_solver(grad, diff, radius, device, gamma=2):
     """
@@ -117,37 +114,36 @@ def optim_solver(grad, diff, radius, device, gamma=2):
     lamda, mhlnbs_dis = compute_mahalanobis_distance(grad, diff, radius, device, gamma)
     lamda_lower_limit = range_lamda_lower(grad).detach().cpu().numpy()
     nu_upper_limit = range_nu_upper(grad, mhlnbs_dis, radius, gamma).detach().cpu().numpy()
-    
+
     #num of values of lamda and nu samples in the allowed range
-    num_rand_samples = 40 
+    num_rand_samples = 40
     final_lamda =  torch.zeros((grad.shape[0],1))
-    
+
     #Solve optim for each example in the batch
     for idx in range(lamda.shape[0]):
         #Optim corresponding to mahalanobis dis < radius
         if lamda[idx] == 1:
             min_left = np.inf
             best_lam = 0
-            for k in range(num_rand_samples):
+            for _ in range(num_rand_samples):
                 val = np.random.uniform(low = lamda_lower_limit[idx], high = 0)
                 left_val = check_right_part1(val, grad[idx], diff[idx], radius, device)
                 if left_val < min_left:
                     min_left = left_val
                     best_lam = val
-            
+
             final_lamda[idx] = best_lam
-        
-        #Optim corresponding to mahalanobis dis > gamma * radius
+
         elif lamda[idx] == 2:
             min_left = np.inf
             best_lam = np.inf
-            for k in range(num_rand_samples):
+            for _ in range(num_rand_samples):
                 val = np.random.uniform(low = 0, high = nu_upper_limit[idx])
                 left_val = check_right_part2(val, grad[idx], diff[idx], radius, device, gamma)
                 if left_val < min_left:
                     min_left = left_val
                     best_lam = val
-            
+
             final_lamda[idx] = 1.0/best_lam       
 
         else:
@@ -237,11 +233,11 @@ class DROCCLFTrainer:
             #Make the weights trainable
             self.model.train()
             lr_scheduler(epoch, total_epochs, only_ce_epochs, learning_rate, self.optimizer)
-            
+
             #Placeholder for the respective 2 loss values
             epoch_adv_loss = torch.tensor([0]).type(torch.float32).to(self.device)  #AdvLoss
             epoch_ce_loss = 0  #Cross entropy Loss
-            
+
             batch_idx = -1
             for data, target, _ in train_loader:
                 batch_idx += 1
@@ -252,7 +248,7 @@ class DROCCLFTrainer:
                 target = torch.squeeze(target)
 
                 self.optimizer.zero_grad()
-                
+
                 # Extract the logits for cross entropy loss
                 logits = self.model(data)
                 logits = torch.squeeze(logits, dim = 1)
@@ -275,18 +271,18 @@ class DROCCLFTrainer:
                 else: 
                     # If only CE based training has to be done
                     loss = ce_loss
-                
+
                 # Backprop
                 loss.backward()
                 self.optimizer.step()
-                    
+
             epoch_ce_loss = epoch_ce_loss/(batch_idx + 1)  #Average CE Loss
             epoch_adv_loss = epoch_adv_loss/(batch_idx + 1) #Average AdvLoss
 
             #normal val loader has the positive data and the far negative data
             auc, pos_scores, far_neg_scores  = self.test(val_loader, get_auc=True)
             _, _, close_neg_scores  = self.test(closeneg_val_loader, get_auc=False)
-            
+
             precision_fpr03 , recall_fpr03 = cal_precision_recall(pos_scores, far_neg_scores, close_neg_scores, 0.03)
             precision_fpr05 , recall_fpr05 = cal_precision_recall(pos_scores, far_neg_scores, close_neg_scores, 0.05)
             if recall_fpr03 > best_recall_fpr03:
@@ -295,19 +291,22 @@ class DROCCLFTrainer:
                 best_recall_fpr05 = recall_fpr05
                 best_precision_fpr05 = precision_fpr05
                 best_model = copy.deepcopy(self.model)
-            print('Epoch: {}, CE Loss: {}, AdvLoss: {}'.format(
-                epoch, epoch_ce_loss.item(), epoch_adv_loss.item()))
-            print('Precision @ FPR 3% : {}, Recall @ FPR 3%: {}'.format(
-                precision_fpr03, recall_fpr03))
-            print('Precision @ FPR 5% : {}, Recall @ FPR 5%: {}'.format(
-                precision_fpr05, recall_fpr05))
+            print(
+                f'Epoch: {epoch}, CE Loss: {epoch_ce_loss.item()}, AdvLoss: {epoch_adv_loss.item()}'
+            )
+            print(
+                f'Precision @ FPR 3% : {precision_fpr03}, Recall @ FPR 3%: {recall_fpr03}'
+            )
+            print(
+                f'Precision @ FPR 5% : {precision_fpr05}, Recall @ FPR 5%: {recall_fpr05}'
+            )
         self.model = copy.deepcopy(best_model)
-        print('\nBest test Precision @ FPR 3% : {}, Recall @ FPR 3%: {}'.format(
-            best_precision_fpr03, best_recall_fpr03
-        ))
-        print('\nBest test Precision @ FPR 5% : {}, Recall @ FPR 5%: {}'.format(
-            best_precision_fpr05, best_recall_fpr05
-        ))
+        print(
+            f'\nBest test Precision @ FPR 3% : {best_precision_fpr03}, Recall @ FPR 3%: {best_recall_fpr03}'
+        )
+        print(
+            f'\nBest test Precision @ FPR 5% : {best_precision_fpr05}, Recall @ FPR 5%: {best_recall_fpr05}'
+        )
 
     def test(self, test_loader, get_auc = True):
         """Evaluate the model on the given test dataset.
@@ -317,9 +316,7 @@ class DROCCLFTrainer:
         test_loader: Dataloader object for the test dataset.
         """        
         label_score = []
-        batch_idx = -1
-        for data, target, _ in test_loader:
-            batch_idx += 1
+        for batch_idx, (data, target, _) in enumerate(test_loader, start=-1):
             data, target = data.to(self.device), target.to(self.device)
             data = data.to(torch.float)
             target = target.to(torch.float)
@@ -337,9 +334,7 @@ class DROCCLFTrainer:
         scores = np.array(scores)
         pos_scores = scores[labels==1]
         neg_scores = scores[labels==0]
-        auc = -1
-        if get_auc:
-            auc = roc_auc_score(labels, scores)
+        auc = roc_auc_score(labels, scores) if get_auc else -1
         return auc, pos_scores, neg_scores
         
     
@@ -373,7 +368,7 @@ class DROCCLFTrainer:
                 new_targets = torch.zeros(batch_size, 1).to(self.device)
                 new_targets = torch.squeeze(new_targets)
                 new_targets = new_targets.to(torch.float)
-                
+
                 logits = self.model(x_adv_sampled)         
                 logits = torch.squeeze(logits, dim = 1)
                 new_loss = F.binary_cross_entropy_with_logits(logits, new_targets)
@@ -399,9 +394,7 @@ class DROCCLFTrainer:
 
         adv_pred = self.model(x_adv_sampled)
         adv_pred = torch.squeeze(adv_pred, dim=1)
-        adv_loss = F.binary_cross_entropy_with_logits(adv_pred, (new_targets * 0))
-
-        return adv_loss
+        return F.binary_cross_entropy_with_logits(adv_pred, (new_targets * 0))
 
     def save(self, path):
         torch.save(self.model.state_dict(),os.path.join(path, 'model.pt'))

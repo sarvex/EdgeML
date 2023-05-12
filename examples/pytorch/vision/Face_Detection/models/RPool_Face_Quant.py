@@ -83,15 +83,13 @@ class S3FD(nn.Module):
         """
         size = x.size()[2:]
         batch_size = x.shape[0]
-        sources = list()
-        loc = list()
-        conf = list()
+        loc = []
+        conf = []
 
         x = self.conv_top(x)
 
         s = self.L2Norm3_3(x)
-        sources.append(s)
-
+        sources = [s]
         patches = self.unfold(x)
         patches = torch.cat(torch.unbind(patches,dim=2),dim=0)
         patches = torch.reshape(patches,(-1,4,8,8))
@@ -154,9 +152,9 @@ class S3FD(nn.Module):
 
 
         features_maps = []
-        for i in range(len(loc)):
+        for item in loc:
             feat = []
-            feat += [loc[i].size(1), loc[i].size(2)]
+            feat += [item.size(1), item.size(2)]
             features_maps += [feat]
 
         self.priorbox = PriorBox(size, features_maps, cfg)
@@ -165,7 +163,7 @@ class S3FD(nn.Module):
         loc = torch.cat([o.view(o.size(0), -1) for o in loc], 1)
         conf = torch.cat([o.view(o.size(0), -1) for o in conf], 1)
 
-       
+
         if self.phase == 'test':
             output = detect_function(cfg,
                 loc.view(loc.size(0), -1, 4),                   # loc preds
@@ -184,16 +182,13 @@ class S3FD(nn.Module):
 
     def load_weights(self, base_file):
         other, ext = os.path.splitext(base_file)
-        if ext == '.pkl' or '.pth':
-            print('Loading weights into state dict...')
-            mdata = torch.load(base_file,
-                               map_location=lambda storage, loc: storage)
-            weights = mdata['weight']
-            epoch = mdata['epoch']
-            self.load_state_dict(weights)
-            print('Finished!')
-        else:
-            print('Sorry only .pth and .pkl files supported.')
+        print('Loading weights into state dict...')
+        mdata = torch.load(base_file,
+                           map_location=lambda storage, loc: storage)
+        weights = mdata['weight']
+        epoch = mdata['epoch']
+        self.load_state_dict(weights)
+        print('Finished!')
         return epoch
 
     def xavier(self, param):
@@ -260,10 +255,7 @@ class InvertedResidual(nn.Module):
         self.conv = nn.Sequential(*layers)
 
     def forward(self, x):
-        if self.use_res_connect:
-            return x + self.conv(x)
-        else:
-            return self.conv(x)
+        return x + self.conv(x) if self.use_res_connect else self.conv(x)
 
 
 class MobileNetV2(nn.Module):
@@ -292,8 +284,9 @@ class MobileNetV2(nn.Module):
             ]
 
         if len(inverted_residual_setting) == 0 or len(inverted_residual_setting[0]) != 4:
-            raise ValueError("inverted_residual_setting should be non-empty "
-                             "or a 4-element list, got {}".format(inverted_residual_setting))
+            raise ValueError(
+                f"inverted_residual_setting should be non-empty or a 4-element list, got {inverted_residual_setting}"
+            )
 
         # building first layer
         input_channel = _make_divisible(input_channel * width_mult, round_nearest)
@@ -305,7 +298,7 @@ class MobileNetV2(nn.Module):
                 stride = s if i == 0 else 1
                 self.layers.append(block(input_channel, output_channel, stride, expand_ratio=t))
                 input_channel = output_channel
-                
+
         # weight initialization
         for m in self.modules():
             if isinstance(m, nn.Conv2d):

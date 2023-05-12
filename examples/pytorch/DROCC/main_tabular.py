@@ -34,8 +34,7 @@ class MLP(nn.Module):
 
     def forward(self, input):
         features = self.feature_extractor(input)
-        logits = self.classifier(features.view(-1, self.size_final))
-        return logits
+        return self.classifier(features.view(-1, self.size_final))
 
 def adjust_learning_rate(epoch, total_epochs, only_ce_epochs, learning_rate, optimizer):
         """Adjust learning rate during training.
@@ -102,7 +101,7 @@ def main():
     train_dataset, test_dataset, num_features = load_data(args.data_path)
     train_loader = DataLoader(train_dataset, args.batch_size, shuffle=True)
     test_loader = DataLoader(test_dataset, args.batch_size, shuffle=True)
-    
+
     model = MLP(input_dim=num_features, num_hidden_nodes=args.hd, num_classes=1).to(device)
     if args.optim == 1:
         optimizer = optim.SGD(model.parameters(),
@@ -113,7 +112,7 @@ def main():
         optimizer = optim.Adam(model.parameters(),
                                lr=args.lr)
         print("using Adam")
-    
+
     trainer = DROCCTrainer(model, optimizer, args.lamda, args.radius, args.gamma, device)
 
     if args.eval == 0:
@@ -131,7 +130,7 @@ def main():
             print('Saved model not found. Cannot run evaluation.')
             exit()
         score = trainer.test(test_loader, 'F1')
-        print('Test F1: {}'.format(score))
+        print(f'Test F1: {score}')
 
 if __name__ == '__main__':
     torch.set_printoptions(precision=5)

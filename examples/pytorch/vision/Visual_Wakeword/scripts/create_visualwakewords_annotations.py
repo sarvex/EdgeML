@@ -98,7 +98,7 @@ def create_visual_wakeword_annotations(annotations_file,
       foreground_class_name: category from COCO dataset that is filtered by
         the visual wakewords dataset
     """
-    print('Processing {}...'.format(annotations_file))
+    print(f'Processing {annotations_file}...')
     coco = COCO(annotations_file)
 
     info = {"description": "Visual Wake Words Dataset",
@@ -115,16 +115,19 @@ def create_visual_wakeword_annotations(annotations_file,
     images = dataset['images']
     # Create category index
     foreground_category = None
-    background_category = {'supercategory': 'background', 'id': 0, 'name': 'background'}
     for category in dataset['categories']:
         if category['name'] == foreground_class_name:
             foreground_class_id = category['id']
             foreground_category = category
     foreground_category['id'] = 1
-    background_category['name'] = "not-{}".format(foreground_category['name'])
+    background_category = {
+        'supercategory': 'background',
+        'id': 0,
+        'name': f"not-{foreground_category['name']}",
+    }
     categories = [background_category, foreground_category]
 
-    if not 'annotations' in dataset:
+    if 'annotations' not in dataset:
         raise KeyError('Need annotations in json file to build the dataset.')
     new_ann_id = 0
     annotations = []
@@ -149,9 +152,9 @@ def create_visual_wakeword_annotations(annotations_file,
                     annotations.append(new_ann)
                     positive_img_ids.add(img_id)
                     new_ann_id += 1
-    print("There are {} images that now have label {}, of the {} images in total.".format(len(positive_img_ids),
-                                                                                          foreground_class_name,
-                                                                                          len(coco.imgs)))
+    print(
+        f"There are {len(positive_img_ids)} images that now have label {foreground_class_name}, of the {len(coco.imgs)} images in total."
+    )
     negative_img_ids = list(set(coco.imgs.keys()) - positive_img_ids)
     for img_id in negative_img_ids:
         new_ann = {

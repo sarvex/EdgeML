@@ -16,12 +16,12 @@ config = helper.getSRNN2Args()
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
 DATA_DIR = config.data_dir
-x_train_ = np.load(DATA_DIR + 'x_train.npy')
-y_train = np.load(DATA_DIR + 'y_train.npy')
-x_val_ = np.load(DATA_DIR + 'x_val.npy')
-y_val = np.load(DATA_DIR + 'y_val.npy')
-x_test_ = np.load(DATA_DIR + 'x_test.npy')
-y_test = np.load(DATA_DIR + 'y_test.npy')
+x_train_ = np.load(f'{DATA_DIR}x_train.npy')
+y_train = np.load(f'{DATA_DIR}y_train.npy')
+x_val_ = np.load(f'{DATA_DIR}x_val.npy')
+y_val = np.load(f'{DATA_DIR}y_val.npy')
+x_test_ = np.load(f'{DATA_DIR}x_test.npy')
+y_test = np.load(f'{DATA_DIR}y_test.npy')
 
 # Mean-var normalize
 mean = np.mean(np.reshape(x_train_, [-1, x_train_.shape[-1]]), axis=0)
@@ -70,7 +70,7 @@ cellArgs = {}
 
 srnn2 = SRNN2(numInput, numClasses, hiddenDim0, hiddenDim1, cellType,
 			 dropoutProbability_l0, dropoutProbability_l1,
-			 **cellArgs).to(device)  
+			 **cellArgs).to(device)
 trainer = SRNNTrainer(srnn2, learningRate, lossType='xentropy', device=device)
 
 trainer.train(brickSize, batchSize, epochs, x_train, x_val, y_train, y_val,

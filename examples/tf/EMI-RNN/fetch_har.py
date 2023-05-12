@@ -14,20 +14,20 @@ def downloadData(workingDir, downloadDir):
     def runcommand(command, splitChar=' '):
         p = subprocess.Popen(command.split(splitChar), stdout=subprocess.PIPE)
         output, error = p.communicate()
-        assert(p.returncode == 0), 'Command failed: %s' % command
+        assert (p.returncode == 0), f'Command failed: {command}'
 
-    path = workingDir + '/' + downloadDir
+    path = f'{workingDir}/{downloadDir}'
     path = os.path.abspath(path)
     try:
         os.mkdir(path)
     except OSError:
-        print("Could not create %s. Make sure the path does" % path)
+        print(f"Could not create {path}. Make sure the path does")
         print("not already exist and you have permisions to create it.")
         return False
     cwd = os.getcwd()
     os.chdir(path)
     print("Downloading data")
-    command = 'wget %s' % linkData
+    command = f'wget {linkData}'
     runcommand(command)
     print("Extracting data")
     print(os.getcwd())

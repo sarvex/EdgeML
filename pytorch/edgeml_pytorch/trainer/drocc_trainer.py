@@ -60,11 +60,11 @@ class DROCCTrainer:
             #Make the weights trainable
             self.model.train()
             lr_scheduler(epoch, total_epochs, only_ce_epochs, learning_rate, self.optimizer)
-            
+
             #Placeholder for the respective 2 loss values
             epoch_adv_loss = torch.tensor([0]).type(torch.float32).to(self.device)  #AdvLoss
             epoch_ce_loss = 0  #Cross entropy Loss
-            
+
             batch_idx = -1
             for data, target, _ in train_loader:
                 batch_idx += 1
@@ -75,7 +75,7 @@ class DROCCTrainer:
                 target = torch.squeeze(target)
 
                 self.optimizer.zero_grad()
-                
+
                 # Extract the logits for cross entropy loss
                 logits = self.model(data)
                 logits = torch.squeeze(logits, dim = 1)
@@ -96,11 +96,11 @@ class DROCCTrainer:
                 else: 
                     # If only CE based training has to be done
                     loss = ce_loss
-                
+
                 # Backprop
                 loss.backward()
                 self.optimizer.step()
-                    
+
             epoch_ce_loss = epoch_ce_loss/(batch_idx + 1)  #Average CE Loss
             epoch_adv_loss = epoch_adv_loss/(batch_idx + 1) #Average AdvLoss
 
@@ -108,13 +108,11 @@ class DROCCTrainer:
             if test_score > best_score:
                 best_score = test_score
                 best_model = copy.deepcopy(self.model)
-            print('Epoch: {}, CE Loss: {}, AdvLoss: {}, {}: {}'.format(
-                epoch, epoch_ce_loss.item(), epoch_adv_loss.item(), 
-                metric, test_score))
+            print(
+                f'Epoch: {epoch}, CE Loss: {epoch_ce_loss.item()}, AdvLoss: {epoch_adv_loss.item()}, {metric}: {test_score}'
+            )
         self.model = copy.deepcopy(best_model)
-        print('\nBest test {}: {}'.format(
-            metric, best_score
-        ))
+        print(f'\nBest test {metric}: {best_score}')
 
     def test(self, test_loader, metric):
         """Evaluate the model on the given test dataset.
@@ -126,9 +124,7 @@ class DROCCTrainer:
         """        
         self.model.eval()
         label_score = []
-        batch_idx = -1
-        for data, target, _ in test_loader:
-            batch_idx += 1
+        for batch_idx, (data, target, _) in enumerate(test_loader, start=-1):
             data, target = data.to(self.device), target.to(self.device)
             data = data.to(torch.float)
             target = target.to(torch.float)
@@ -183,7 +179,7 @@ class DROCCTrainer:
                 new_targets = torch.zeros(batch_size, 1).to(self.device)
                 new_targets = torch.squeeze(new_targets)
                 new_targets = new_targets.to(torch.float)
-                
+
                 logits = self.model(x_adv_sampled)         
                 logits = torch.squeeze(logits, dim = 1)
                 new_loss = F.binary_cross_entropy_with_logits(logits, new_targets)
@@ -209,9 +205,7 @@ class DROCCTrainer:
 
         adv_pred = self.model(x_adv_sampled)
         adv_pred = torch.squeeze(adv_pred, dim=1)
-        adv_loss = F.binary_cross_entropy_with_logits(adv_pred, (new_targets * 0))
-
-        return adv_loss
+        return F.binary_cross_entropy_with_logits(adv_pred, (new_targets * 0))
 
     def save(self, path):
         torch.save(self.model.state_dict(),os.path.join(path, 'model.pt'))

@@ -24,10 +24,7 @@ def threadToggle():
         try:
             line = input()
             if ' ' in line:
-                if TOGGLESTATUS == 'OFF':
-                    TOGGLESTATUS = 'ON'
-                else:
-                    TOGGLESTATUS = 'OFF'
+                TOGGLESTATUS = 'ON' if TOGGLESTATUS == 'OFF' else 'OFF'
             if 'q' in line:
                 EXIT = True
                 break
@@ -43,14 +40,14 @@ def main():
     comPort = 'COM13'
     baudRate = 115200
     if len(sys.argv) < 2:
-        print("Usage: %s SESSION_KEY [COM Port]" % (sys.argv[0]))
+        print(f"Usage: {sys.argv[0]} SESSION_KEY [COM Port]")
         EXIT = True
         return
     else:
         sessionKey = sys.argv[1]
         if len(sys.argv) > 2:
             comPort = sys.argv[2]
-        outFile = sessionKey + '.csv'
+        outFile = f'{sessionKey}.csv'
 
     ser = serial.Serial(port=comPort, baudrate=baudRate, timeout=1)
     testChar = ser.read()
@@ -58,14 +55,14 @@ def main():
         print("No bytes received. Exiting!")
         return
     # Ignore what ever remains of the first line
-    for x in range(0, 5):
+    for _ in range(0, 5):
         a = ser.readline()
     # Create directory
     if not os.path.exists('data'):
         os.mkdir('data')
     if not os.path.exists('data/raw_data'):
         os.mkdir('data/raw_data')
-    outFile = './data/raw_data/' + outFile
+    outFile = f'./data/raw_data/{outFile}'
     fout = open(outFile, 'w')
     fout.write("millis,ax,ay,az,gx,gy,gz,toggle\n")
     print("Starting fetch")
@@ -79,11 +76,8 @@ def main():
             tokens = a.split(',')
             if len(tokens) != 7:
                 continue
-            if TOGGLESTATUS == 'OFF':
-                toggle = 0
-            else:
-                toggle = 1
-            a += ',' + str(toggle)
+            toggle = 0 if TOGGLESTATUS == 'OFF' else 1
+            a += f',{toggle}'
             a += '\n'
             fout.write(a)
             linesWritten += 1

@@ -11,7 +11,7 @@ def sigmoid(x):
 
 
 def min_max(A, name):
-    print(name + " has max: " + str(np.max(A)) + " min: " + str(np.min(A)))
+    print(f"{name} has max: {str(np.max(A))} min: {str(np.min(A))}")
     return np.max([np.abs(np.max(A)), np.abs(np.min(A))])
 
 
@@ -92,17 +92,16 @@ def quantizeFastModels(modelDir, maxValue=127, scalarScaleFactor=1000):
 
         quantClassifierWeights.append(temp)
 
-    quantScalarWeights = []
-    for scalar in scalarWeightList:
-        quantScalarWeights.append(
-            np.round(scalarScaleFactor * sigmoid(scalar)).astype('int32'))
-
+    quantScalarWeights = [
+        np.round(scalarScaleFactor * sigmoid(scalar)).astype('int32')
+        for scalar in scalarWeightList
+    ]
     quantModelDir = os.path.join(modelDir, 'QuantizedModel')
     if not os.path.isdir(quantModelDir):
         try:
             os.makedirs(quantModelDir, exist_ok=True)
         except OSError:
-            print("Creation of the directory %s failed" % quantModelDir)
+            print(f"Creation of the directory {quantModelDir} failed")
 
     np.save(os.path.join(quantModelDir, "paramScaleFactor.npy"),
             paramScaleFactor.astype('int32'))
@@ -111,16 +110,22 @@ def quantizeFastModels(modelDir, maxValue=127, scalarScaleFactor=1000):
     np.save(os.path.join(quantModelDir, "scalarScaleFactor"), scalarScaleFactor)
 
     for i in range(0, len(scalarNameList)):
-        np.save(os.path.join(quantModelDir, "q" +
-                scalarNameList[i]), quantScalarWeights[i])
+        np.save(
+            os.path.join(quantModelDir, f"q{scalarNameList[i]}"),
+            quantScalarWeights[i],
+        )
 
     for i in range(len(classifierNameList)):
-        np.save(os.path.join(quantModelDir, "q" +
-                classifierNameList[i]), quantClassifierWeights[i])
+        np.save(
+            os.path.join(quantModelDir, f"q{classifierNameList[i]}"),
+            quantClassifierWeights[i],
+        )
 
     for i in range(len(paramNameList)):
-        np.save(os.path.join(quantModelDir, "q" + paramNameList[i]),
-                quantParamWeights[i])
+        np.save(
+            os.path.join(quantModelDir, f"q{paramNameList[i]}"),
+            quantParamWeights[i],
+        )
 
     print("\n\nQuantized Model Dir: " + quantModelDir)
 

@@ -52,9 +52,7 @@ parser.add_argument('--save_folder', type=str,
 args = parser.parse_args()
 
 
-use_cuda = torch.cuda.is_available()
-
-if use_cuda:
+if use_cuda := torch.cuda.is_available():
     torch.set_default_tensor_type('torch.cuda.FloatTensor')
 else:
     torch.set_default_tensor_type('torch.FloatTensor')
@@ -121,12 +119,10 @@ def multi_scale_test(net, image, max_im_shrink):
     if bt > 1:
         index = np.where(np.minimum(
             det_b[:, 2] - det_b[:, 0] + 1, det_b[:, 3] - det_b[:, 1] + 1) < 100)[0]
-        det_b = det_b[index, :]
     else:
         index = np.where(np.maximum(
             det_b[:, 2] - det_b[:, 0] + 1, det_b[:, 3] - det_b[:, 1] + 1) > 30)[0]
-        det_b = det_b[index, :]
-
+    det_b = det_b[index, :]
     return det_s, det_b
 
 
@@ -182,15 +178,15 @@ def bbox_vote(det):
 
 if __name__ == '__main__':
     cfg.USE_NMS = False
-    module = import_module('models.' + args.model_arch)
+    module = import_module(f'models.{args.model_arch}')
     net = module.build_s3fd('test', cfg.NUM_CLASSES)
-    
+
     if args.multigpu == True:
         net = torch.nn.DataParallel(net)
 
     checkpoint_dict = torch.load(args.model)
     model_dict = net.state_dict()
-    model_dict.update(checkpoint_dict) 
+    model_dict.update(checkpoint_dict)
     net.load_state_dict(model_dict)
 
     net.eval()
@@ -199,17 +195,15 @@ if __name__ == '__main__':
         net.cuda()
         cudnn.benckmark = True
 
-    counter = 0
-
     f = open('./data/face_val_scutB.txt')
     lines = f.readlines()
 
-    if os.path.exists('./{}'.format(args.save_folder)) is False:
-        os.mkdir('./{}'.format(args.save_folder))
+    if os.path.exists(f'./{args.save_folder}') is False:
+        os.mkdir(f'./{args.save_folder}')
 
-    for line in lines:
+    for counter, line in enumerate(lines, start=1):
         line = line.strip().split()
-        im_name = SCUT_ROOT + '/' + line[0]
+        im_name = f'{SCUT_ROOT}/{line[0]}'
 
         img = Image.open(im_name)
         img = img.convert('RGB')
@@ -218,9 +212,7 @@ if __name__ == '__main__':
         max_im_shrink = np.sqrt(
             320 * 240 / (img.shape[0] * img.shape[1]))
 
-        shrink = max_im_shrink if max_im_shrink < 1 else 1
-        counter += 1
-
+        shrink = min(max_im_shrink, 1)
         t1 = time.time()
         det0 = detect_face(net, img, shrink)
 
@@ -230,9 +222,9 @@ if __name__ == '__main__':
         print('Detect %04d th image costs %.4f' % (counter, t2 - t1))
 
         imgname = osp.split(line[0])[1]
-        save_path = './{}'.format(args.save_folder)
-        fout = open(osp.join(save_path, imgname[0:-4] + '.txt'), 'w')
-        fout.write('{:s}\n'.format(imgname[0:-4] + '.txt'))
+        save_path = f'./{args.save_folder}'
+        fout = open(osp.join(save_path, f'{imgname[:-4]}.txt'), 'w')
+        fout.write('{:s}\n'.format(f'{imgname[:-4]}.txt'))
         fout.write('{:d}\n'.format(dets.shape[0]))
         for i in range(dets.shape[0]):
             xmin = dets[i][0]

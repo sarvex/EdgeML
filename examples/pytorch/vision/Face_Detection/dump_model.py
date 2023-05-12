@@ -32,7 +32,6 @@ parser = argparse.ArgumentParser(description='face detection dump')
 
 parser.add_argument('--model', type=str,
                     default='weights/rpool_face_c.pth', help='trained model')
-                    #small_fgrnn_smallram_sd.pth', help='trained model')
 parser.add_argument('--model_arch',
                     default='RPool_Face_C', type=str,
                     choices=['RPool_Face_C', 'RPool_Face_B', 'RPool_Face_A', 'RPool_Face_Quant'],
@@ -45,9 +44,7 @@ parser.add_argument('--save_traces_npy_dir', default=None, type=str, help='Direc
 args = parser.parse_args()
 
 
-use_cuda = torch.cuda.is_available()
-
-if use_cuda:
+if use_cuda := torch.cuda.is_available():
     torch.set_default_tensor_type('torch.cuda.FloatTensor')
 else:
     torch.set_default_tensor_type('torch.FloatTensor')
@@ -59,21 +56,57 @@ def saveModelNpy(net):
         try:
             os.mkdir(args.save_model_npy_dir)
         except OSError:
-            print("Creation of the directory %s failed" % args.save_model_npy_dir)
+            print(f"Creation of the directory {args.save_model_npy_dir} failed")
             return
 
-    np.save(args.save_model_npy_dir+'/W1.npy', net.rnn_model.cell_rnn.cell.W.cpu().detach().numpy())
-    np.save(args.save_model_npy_dir+'/W2.npy', net.rnn_model.cell_bidirrnn.cell.W.cpu().detach().numpy())
-    np.save(args.save_model_npy_dir+'/U1.npy', net.rnn_model.cell_rnn.cell.U.cpu().detach().numpy())
-    np.save(args.save_model_npy_dir+'/U2.npy', net.rnn_model.cell_bidirrnn.cell.U.cpu().detach().numpy())
-    np.save(args.save_model_npy_dir+'/Bg1.npy', net.rnn_model.cell_rnn.cell.bias_gate.cpu().detach().numpy())
-    np.save(args.save_model_npy_dir+'/Bg2.npy', net.rnn_model.cell_bidirrnn.cell.bias_gate.cpu().detach().numpy())
-    np.save(args.save_model_npy_dir+'/Bh1.npy', net.rnn_model.cell_rnn.cell.bias_update.cpu().detach().numpy())
-    np.save(args.save_model_npy_dir+'/Bh2.npy', net.rnn_model.cell_bidirrnn.cell.bias_update.cpu().detach().numpy())
-    np.save(args.save_model_npy_dir+'/nu1.npy', net.rnn_model.cell_rnn.cell.nu.cpu().detach().numpy())
-    np.save(args.save_model_npy_dir+'/nu2.npy', net.rnn_model.cell_bidirrnn.cell.nu.cpu().detach().numpy())
-    np.save(args.save_model_npy_dir+'/zeta1.npy', net.rnn_model.cell_rnn.cell.zeta.cpu().detach().numpy())
-    np.save(args.save_model_npy_dir+'/zeta2.npy', net.rnn_model.cell_bidirrnn.cell.zeta.cpu().detach().numpy())
+    np.save(
+        f'{args.save_model_npy_dir}/W1.npy',
+        net.rnn_model.cell_rnn.cell.W.cpu().detach().numpy(),
+    )
+    np.save(
+        f'{args.save_model_npy_dir}/W2.npy',
+        net.rnn_model.cell_bidirrnn.cell.W.cpu().detach().numpy(),
+    )
+    np.save(
+        f'{args.save_model_npy_dir}/U1.npy',
+        net.rnn_model.cell_rnn.cell.U.cpu().detach().numpy(),
+    )
+    np.save(
+        f'{args.save_model_npy_dir}/U2.npy',
+        net.rnn_model.cell_bidirrnn.cell.U.cpu().detach().numpy(),
+    )
+    np.save(
+        f'{args.save_model_npy_dir}/Bg1.npy',
+        net.rnn_model.cell_rnn.cell.bias_gate.cpu().detach().numpy(),
+    )
+    np.save(
+        f'{args.save_model_npy_dir}/Bg2.npy',
+        net.rnn_model.cell_bidirrnn.cell.bias_gate.cpu().detach().numpy(),
+    )
+    np.save(
+        f'{args.save_model_npy_dir}/Bh1.npy',
+        net.rnn_model.cell_rnn.cell.bias_update.cpu().detach().numpy(),
+    )
+    np.save(
+        f'{args.save_model_npy_dir}/Bh2.npy',
+        net.rnn_model.cell_bidirrnn.cell.bias_update.cpu().detach().numpy(),
+    )
+    np.save(
+        f'{args.save_model_npy_dir}/nu1.npy',
+        net.rnn_model.cell_rnn.cell.nu.cpu().detach().numpy(),
+    )
+    np.save(
+        f'{args.save_model_npy_dir}/nu2.npy',
+        net.rnn_model.cell_bidirrnn.cell.nu.cpu().detach().numpy(),
+    )
+    np.save(
+        f'{args.save_model_npy_dir}/zeta1.npy',
+        net.rnn_model.cell_rnn.cell.zeta.cpu().detach().numpy(),
+    )
+    np.save(
+        f'{args.save_model_npy_dir}/zeta2.npy',
+        net.rnn_model.cell_bidirrnn.cell.zeta.cpu().detach().numpy(),
+    )
 
 
 
@@ -88,30 +121,33 @@ def saveTracesNpy(net, img_list):
         try:
             os.mkdir(args.save_traces_npy_dir)
         except OSError:
-            print("Creation of the directory %s failed" % args.save_traces_npy_dir)
+            print(f"Creation of the directory {args.save_traces_npy_dir} failed")
             return
 
     if os.path.isdir(os.path.join(args.save_traces_npy_dir,'inputs')) is False:
         try:
             os.mkdir(os.path.join(args.save_traces_npy_dir,'inputs'))
         except OSError:
-            print("Creation of the directory %s failed" % os.path.join(args.save_traces_npy_dir,'inputs'))
+            print(
+                f"Creation of the directory {os.path.join(args.save_traces_npy_dir, 'inputs')} failed"
+            )
             return
 
     if os.path.isdir(os.path.join(args.save_traces_npy_dir,'outputs')) is False:
         try:
             os.mkdir(os.path.join(args.save_traces_npy_dir,'outputs'))
         except OSError:
-            print("Creation of the directory %s failed" % os.path.join(args.save_traces_npy_dir,'outputs'))
+            print(
+                f"Creation of the directory {os.path.join(args.save_traces_npy_dir, 'outputs')} failed"
+            )
             return
 
     inputDims = net.rnn_model.inputDims
     nRows = net.rnn_model.nRows
     nCols = net.rnn_model.nCols
-    count=0
-    for img_path in img_list:
+    for count, img_path in enumerate(img_list):
         img = Image.open(os.path.join(args.image_folder, img_path))
-        
+
         img = img.convert('RGB')
 
         img = np.array(img)
@@ -144,10 +180,14 @@ def saveTracesNpy(net, img_list):
         for k in range(patches_all.shape[-1]):
             patches_tosave = patches_all[0,:,:,:,k].cpu().numpy().transpose(1,2,0)
             rnnX_tosave = rnnX_all[0,:,k].cpu().numpy()
-            np.save(args.save_traces_npy_dir+'/inputs/trace_'+str(count)+'_'+str(k)+'.npy', patches_tosave)
-            np.save(args.save_traces_npy_dir+'/outputs/trace_'+str(count)+'_'+str(k)+'.npy', rnnX_tosave)
-
-        count+=1
+            np.save(
+                f'{args.save_traces_npy_dir}/inputs/trace_{str(count)}_{str(k)}.npy',
+                patches_tosave,
+            )
+            np.save(
+                f'{args.save_traces_npy_dir}/outputs/trace_{str(count)}_{str(k)}.npy',
+                rnnX_tosave,
+            )
 
 
 
@@ -156,7 +196,7 @@ def saveTracesNpy(net, img_list):
 
 if __name__ == '__main__':
 
-    module = import_module('models.' + args.model_arch)
+    module = import_module(f'models.{args.model_arch}')
     net = module.build_s3fd('test', cfg.NUM_CLASSES)
 
     # net = torch.nn.DataParallel(net)
@@ -166,7 +206,7 @@ if __name__ == '__main__':
     model_dict = net.state_dict()
 
 
-    model_dict.update(checkpoint_dict) 
+    model_dict.update(checkpoint_dict)
     net.load_state_dict(model_dict)
 
 

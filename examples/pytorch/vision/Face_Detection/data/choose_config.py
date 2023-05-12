@@ -9,7 +9,7 @@ IS_QVGA_MONO = os.environ['IS_QVGA_MONO']
 
 name = 'config'
 if IS_QVGA_MONO == '1':
-	name = name + '_qvga'
+	name += '_qvga'
 
 
-cfg = import_module('data.' + name)
+cfg = import_module(f'data.{name}')

@@ -29,23 +29,11 @@ class FastTrainer:
 
         self.numClasses = numClasses
         self.inputDims = self.FastObj.input_size
-        if device is None:
-            self.device = torch.device("cpu")
-        else:
-            self.device = device
-
+        self.device = torch.device("cpu") if device is None else device
         self.learningRate = learningRate
 
-        if outFile is not None:
-            self.outFile = open(outFile, 'w')
-        else:
-            self.outFile = sys.stdout
-
-        if self.sW > 0.99 and self.sU > 0.99:
-            self.isDenseTraining = True
-        else:
-            self.isDenseTraining = False
-
+        self.outFile = open(outFile, 'w') if outFile is not None else sys.stdout
+        self.isDenseTraining = self.sW > 0.99 and self.sU > 0.99
         self.assertInit()
         self.numMatrices = self.FastObj.num_weight_matrices
         self.totalMatrices = self.numMatrices[0] + self.numMatrices[1]
@@ -74,72 +62,65 @@ class FastTrainer:
         '''
         if self.FastObj.cellType == "LSTMLR":
             feats, _ = self.RNN(input)
-            logits = self.classifier(feats[-1, :])
         else:
             feats = self.RNN(input)
-            logits = self.classifier(feats[-1, :])
-
+        logits = self.classifier(feats[-1, :])
         return logits, feats[:, -1]
 
     def optimizer(self):
         '''
         Optimizer for FastObj Params
         '''
-        optimizer = torch.optim.Adam(
-            self.FastObj.parameters(), lr=self.learningRate)
-
-        return optimizer
+        return torch.optim.Adam(self.FastObj.parameters(), lr=self.learningRate)
 
     def loss(self, logits, labels):
         '''
         Loss function for given FastObj
         '''
-        loss = utils.crossEntropyLoss(logits, labels)
-
-        return loss
+        return utils.crossEntropyLoss(logits, labels)
 
     def accuracy(self, logits, labels):
         '''
         Accuracy fucntion to evaluate accuracy when needed
         '''
         correctPredictions = (logits.argmax(dim=1) == labels.argmax(dim=1))
-        accuracy = torch.mean(correctPredictions.float())
-
-        return accuracy
+        return torch.mean(correctPredictions.float())
 
     def assertInit(self):
         err = "sparsity must be between 0 and 1"
-        assert self.sW >= 0 and self.sW <= 1, "W " + err
-        assert self.sU >= 0 and self.sU <= 1, "U " + err
+        assert self.sW >= 0 and self.sW <= 1, f"W {err}"
+        assert self.sU >= 0 and self.sU <= 1, f"U {err}"
 
     def runHardThrsd(self):
         '''
         Function to run the IHT routine on FastObj
         '''
         self.thrsdParams = []
-        thrsdParams = []
-        for i in range(0, self.numMatrices[0]):
-            thrsdParams.append(
-                utils.hardThreshold(self.FastParams[i].data.cpu(), self.sW))
-        for i in range(self.numMatrices[0], self.totalMatrices):
-            thrsdParams.append(
-                utils.hardThreshold(self.FastParams[i].data.cpu(), self.sU))
+        thrsdParams = [
+            utils.hardThreshold(self.FastParams[i].data.cpu(), self.sW)
+            for i in range(0, self.numMatrices[0])
+        ]
+        thrsdParams.extend(
+            utils.hardThreshold(self.FastParams[i].data.cpu(), self.sU)
+            for i in range(self.numMatrices[0], self.totalMatrices)
+        )
         for i in range(0, self.totalMatrices):
             self.FastParams[i].data = torch.FloatTensor(
                 thrsdParams[i]).to(self.device)
-        for i in range(0, self.totalMatrices):
-            self.thrsdParams.append(torch.FloatTensor(
-                np.copy(thrsdParams[i].detach())).to(self.device))
+        self.thrsdParams.extend(
+            torch.FloatTensor(np.copy(thrsdParams[i].detach())).to(self.device)
+            for i in range(0, self.totalMatrices)
+        )
 
     def runSparseTraining(self):
         '''
         Function to run the Sparse Retraining routine on FastObj
         '''
         self.reTrainParams = []
-        for i in range(0, self.totalMatrices):
-            self.reTrainParams.append(
-                utils.copySupport(self.thrsdParams[i],
-                                  self.FastParams[i].data))
+        self.reTrainParams.extend(
+            utils.copySupport(self.thrsdParams[i], self.FastParams[i].data)
+            for i in range(0, self.totalMatrices)
+        )
         for i in range(0, self.totalMatrices):
             self.FastParams[i].data = self.reTrainParams[i]
 
@@ -209,7 +190,7 @@ class FastTrainer:
                         self.FastParams[2].data.cpu())
                 np.save(os.path.join(currDir, "W4.npy"),
                         self.FastParams[3].data.cpu())
-        elif self.FastObj.wRank is not None:
+        else:
             if self.numMatrices[0] == 2:
                 np.save(os.path.join(currDir, "W1.npy"),
                         self.FastParams[0].data.cpu())
@@ -269,7 +250,7 @@ class FastTrainer:
                         self.FastParams[idx + 2].data.cpu())
                 np.save(os.path.join(currDir, "U4.npy"),
                         self.FastParams[idx + 3].data.cpu())
-        elif self.FastObj.uRank is not None:
+        else:
             if self.numMatrices[1] == 2:
                 np.save(os.path.join(currDir, "U1.npy"),
                         self.FastParams[idx + 0].data.cpu())

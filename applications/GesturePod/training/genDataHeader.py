@@ -49,16 +49,13 @@ def createDataFile(W, B, Z, gamma, outfile='data.h'):
     B: m x d_cap (i.e column major)
     Z: m x L (i.e. column major)
     '''
-    valueDict = {}
-    valueDict['gamma'] = gamma
     d_cap = W.shape[0]
     d = W.shape[1]
-    valueDict['featDim'] = '%d' % (d)
-    valueDict['ldDim'] = '%d' % (d_cap)
+    valueDict = {'gamma': gamma, 'featDim': '%d' % d, 'ldDim': '%d' % d_cap}
     WStr = '\n\t\t'
     for i in range(0, d_cap):
         for j in range(0, d):
-            WStr += str(W[i, j]) + ','
+            WStr += f'{str(W[i, j])},'
         WStr += '\n\t\t'
     valueDict['ldProjectionMatrix'] = WStr[:-1]
 
@@ -83,9 +80,8 @@ def createDataFile(W, B, Z, gamma, outfile='data.h'):
         ZStr += '\n\t\t'
     valueDict['prototypeLabelMatrix'] = ZStr[:-2]
     template = populateDataFileTemplate(valueDict)
-    fin = open(outfile, 'w')
-    fin.write(template)
-    fin.close()
+    with open(outfile, 'w') as fin:
+        fin.write(template)
 
 
 

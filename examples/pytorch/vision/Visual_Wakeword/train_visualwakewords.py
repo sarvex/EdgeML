@@ -117,7 +117,7 @@ transform_test = transforms.Compose([
     transforms.ToTensor(),
     normalize
 ]) 
- 
+
 
 
 
@@ -136,7 +136,7 @@ testset = VisualWakeWordsClassification(root=os.path.join(args.data,'all2014'),
 testloader = torch.utils.data.DataLoader(testset, batch_size=256, shuffle=False, 
                                                 num_workers=32)
 
- 
+
 # Model
 
 module = import_module(args.model_arch)
@@ -150,7 +150,7 @@ if args.resume:
     # Load checkpoint.
     print('==> Resuming from checkpoint..')
     assert os.path.isdir('./checkpoints/'), 'Error: no checkpoint directory found!'
-    checkpoint = torch.load('./checkpoints/' + args.resume)
+    checkpoint = torch.load(f'./checkpoints/{args.resume}')
     best_acc = checkpoint['acc']
     start_epoch = checkpoint['epoch']
 
@@ -194,7 +194,7 @@ def test(epoch):
     correct = 0
     total = 0
     with torch.no_grad():
-        for batch_idx, (inputs, targets) in enumerate(testloader):
+        for inputs, targets in testloader:
             batch_size = inputs.shape[0]
             inputs, targets = inputs.to(device), targets.to(device)
             outputs = model(inputs)

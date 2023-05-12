@@ -90,28 +90,27 @@ def createFileList(audioFileDir, testingList,
     dirs = [x for x in dirs if os.path.isdir(os.path.join(audioFileDir, x))]
     assert(len(dirs) == 31), (len(dirs))
     for x in dirs:
-        msg = '%s found without label map' % x
+        msg = f'{x} found without label map'
         assert x in labelMap, msg
 
     allFileList = []
     for fol in dirs:
         if fol == '_background_noise_':
-            print("Ignoring %s" % fol)
+            print(f"Ignoring {fol}")
             continue
-        path = audioFileDir + '/' + fol + '/'
+        path = f'{audioFileDir}/{fol}/'
         files = []
         for w in os.listdir(path):
             if not w.endswith('.wav'):
-                print("Ignoring %s" % w)
+                print(f"Ignoring {w}")
                 continue
-            files.append(fol + '/' + w)
+            files.append(f'{fol}/{w}')
         allFileList.extend(files)
     assert(len(allFileList) == len(set(allFileList)))
 
-    fil = open(testingList, 'r')
-    testingList = fil.readlines()
-    testingList = [x.strip() for x in testingList]
-    fil.close()
+    with open(testingList, 'r') as fil:
+        testingList = fil.readlines()
+        testingList = [x.strip() for x in testingList]
     fil = open(validationList, 'r')
     validationList = fil.readlines()
     validationList = [x.strip() for x in validationList]
@@ -127,9 +126,9 @@ def createFileList(audioFileDir, testingList,
     trainingList = list(allFileList)
     testingList = list(testingList)
     validationList = list(validationList)
-    np.save(outPrefix + 'file_train.npy', trainingList)
-    np.save(outPrefix + 'file_test.npy', testingList)
-    np.save(outPrefix + 'file_val.npy', validationList)
+    np.save(f'{outPrefix}file_train.npy', trainingList)
+    np.save(f'{outPrefix}file_test.npy', testingList)
+    np.save(f'{outPrefix}file_val.npy', validationList)
 
 
 def extractFeatures(fileList, LABELMAP, maxlen, numFilt, samplerate, winlen,
@@ -224,24 +223,24 @@ if __name__=='__main__':
     # ----------------------------------------- #
     np.random.seed(seed)
     random.seed(seed)
-    assert(numLabels in [13, 11])
-    if numLabels == 13:
-        values = [LABELMAP13[x] for x in LABELMAP13]
-        values = set(values)
-        assert(len(values) == 13)
-        LABELMAP = LABELMAP13
+    assert numLabels in {13, 11}
     if numLabels == 11:
         values = [LABELMAP12[x] for x in LABELMAP12]
         values = set(values)
         assert(len(values) == 11)
         LABELMAP = LABELMAP12
 
+    elif numLabels == 13:
+        values = [LABELMAP13[x] for x in LABELMAP13]
+        values = set(values)
+        assert(len(values) == 13)
+        LABELMAP = LABELMAP13
     print("Peforming file creation")
     createFileList(audioFileDir, testingList, validationList,
                    outDir, LABELMAP)
-    trainFileList = np.load(outDir + 'file_train.npy')
-    testFileList = np.load(outDir + 'file_test.npy')
-    valFileList = np.load(outDir + 'file_val.npy')
+    trainFileList = np.load(f'{outDir}file_train.npy')
+    testFileList = np.load(f'{outDir}file_test.npy')
+    valFileList = np.load(f'{outDir}file_val.npy')
     print("Number of train files:", len(trainFileList))
     print("Number of test files", len(testFileList))
     print("Number of val files", len(valFileList))
@@ -255,9 +254,12 @@ if __name__=='__main__':
                                    samplerate, winlen, winstep)
     x_train, y_train = extractFeatures(trainFileList_, LABELMAP, maxlen,
                                        numFilt, samplerate, winlen, winstep)
-    np.save(outDir + 'x_train', x_train);np.save(outDir + 'y_train', y_train)
-    np.save(outDir + 'x_test', x_test);np.save(outDir + 'y_test', y_test)
-    np.save(outDir + 'x_val', x_val);np.save(outDir + 'y_val', y_val)
+    np.save(f'{outDir}x_train', x_train)
+    np.save(f'{outDir}y_train', y_train)
+    np.save(f'{outDir}x_test', x_test)
+    np.save(f'{outDir}y_test', y_test)
+    np.save(f'{outDir}x_val', x_val)
+    np.save(f'{outDir}y_val', y_val)
     print("Shape train", x_train.shape, y_train.shape)
     print("Shape test", x_test.shape, y_test.shape)
     print("Shape val", x_val.shape, y_val.shape)

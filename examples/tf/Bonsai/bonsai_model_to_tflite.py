@@ -46,12 +46,12 @@ def main():
 
     print('Model dir = ', model_dir)
 
-    Z = np.load( model_dir + 'Z.npy', allow_pickle=True )
-    W = np.load( model_dir + 'W.npy', allow_pickle=True )
-    V = np.load( model_dir + 'V.npy', allow_pickle=True )
-    T = np.load( model_dir + 'T.npy', allow_pickle=True )
-    hyperparams = np.load( model_dir + 'hyperParam.npy', allow_pickle=True ).item()
-    
+    Z = np.load(f'{model_dir}Z.npy', allow_pickle=True)
+    W = np.load(f'{model_dir}W.npy', allow_pickle=True)
+    V = np.load(f'{model_dir}V.npy', allow_pickle=True)
+    T = np.load(f'{model_dir}T.npy', allow_pickle=True)
+    hyperparams = np.load(f'{model_dir}hyperParam.npy', allow_pickle=True).item()
+
     n_dim = dataDimension = hyperparams['dataDim']
     projectionDimension = hyperparams['projDim']
     numClasses = hyperparams['numClasses']
@@ -75,22 +75,20 @@ def main():
     out_tensor = model( dummy_tensor )
 
     model.summary()
-    
+
     dense.set_weights( [Z, W, V, T] )
-    
+
     # Save the Keras model in tflite format
     converter = tf.lite.TFLiteConverter.from_keras_model(model)
     #converter.optimizations = [tf.lite.Optimize.DEFAULT]
     tflite_model = converter.convert()
 
     # Save the TF Lite model as file
-    out_tflite_model_file = model_dir + '/bonsai_model.tflite'
-    f = open(out_tflite_model_file, "wb")
-    f.write(tflite_model)
-    f.close()
-
+    out_tflite_model_file = f'{model_dir}/bonsai_model.tflite'
+    with open(out_tflite_model_file, "wb") as f:
+        f.write(tflite_model)
     # Delete any reference to existing models in order to avoid conflicts
-    del model 
+    del model
     del tflite_model
 
     # Prediction on an example input using tflite model we just saved

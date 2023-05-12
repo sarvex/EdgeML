@@ -26,10 +26,7 @@ def findCUDA():
             if IS_WINDOWS:
                 cuda_homes = glob.glob(
                     'C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v*.*')
-                if len(cuda_homes) == 0:
-                    cuda_home = ''
-                else:
-                    cuda_home = cuda_homes[0]
+                cuda_home = '' if not cuda_homes else cuda_homes[0]
             else:
                 cuda_home = '/usr/local/cuda'
             if not os.path.exists(cuda_home):
@@ -108,15 +105,14 @@ def estimateNNZ(A, s, bytesPerVar=4):
     Else uses sparse - 8 byte
     '''
     params = 1
-    hasSparse = False
     for i in range(0, len(A.shape)):
         params *= int(A.shape[i])
     if s < 0.5:
         nnZ = np.ceil(params * s)
-        hasSparse = True
-        return nnZ, nnZ * 2 * bytesPerVar, hasSparse
+        return nnZ, nnZ * 2 * bytesPerVar, True
     else:
         nnZ = params
+        hasSparse = False
         return nnZ, nnZ * bytesPerVar, hasSparse
 
 
@@ -127,11 +123,10 @@ def countNNZ(A: torch.nn.Parameter, isSparse):
     A_ = A.detach().numpy()
     if isSparse:
         return np.count_nonzero(A_)
-    else:
-        nnzs = 1
-        for i in range(0, len(A.shape)):
-            nnzs *= int(A.shape[i])
-        return nnzs
+    nnzs = 1
+    for i in range(0, len(A.shape)):
+        nnzs *= int(A.shape[i])
+    return nnzs
 
 def restructreMatrixBonsaiSeeDot(A, nClasses, nNodes):
     '''

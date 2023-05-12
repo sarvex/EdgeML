@@ -33,11 +33,7 @@ class Bonsai(nn.Module):
         self.dataDimension = dataDimension
         self.projectionDimension = projectionDimension
 
-        if numClasses == 2:
-            self.numClasses = 1
-        else:
-            self.numClasses = numClasses
-
+        self.numClasses = 1 if numClasses == 2 else numClasses
         self.treeDepth = treeDepth
         self.sigma = sigma
 
@@ -54,39 +50,35 @@ class Bonsai(nn.Module):
     def initZ(self, Z):
         if Z is None:
             Z = torch.randn([self.projectionDimension, self.dataDimension])
-            Z = nn.Parameter(Z)
         else:
             Z = torch.from_numpy(Z.astype(np.float32))
-            Z = nn.Parameter(Z)
+        Z = nn.Parameter(Z)
         return Z
 
     def initW(self, W):
         if W is None:
             W = torch.randn(
                 [self.numClasses * self.totalNodes, self.projectionDimension])
-            W = nn.Parameter(W)
         else:
             W = torch.from_numpy(W.astype(np.float32))
-            W = nn.Parameter(W)
+        W = nn.Parameter(W)
         return W
 
     def initV(self, V):
         if V is None:
             V = torch.randn(
                 [self.numClasses * self.totalNodes, self.projectionDimension])
-            V = nn.Parameter(V)
         else:
             V = torch.from_numpy(V.astype(np.float32))
-            V = nn.Parameter(V)
+        V = nn.Parameter(V)
         return V
 
     def initT(self, T):
         if T is None:
             T = torch.randn([self.internalNodes, self.projectionDimension])
-            T = nn.Parameter(T)
         else:
             T = torch.from_numpy(T.astype(np.float32))
-            T = nn.Parameter(T)
+        T = nn.Parameter(T)
         return T
 
     def forward(self, X, sigmaI):
@@ -98,10 +90,9 @@ class Bonsai(nn.Module):
         sigmaI is constant
         '''
         X_ = torch.matmul(self.Z, torch.t(X)) / self.projectionDimension
-        W_ = self.W[0:(self.numClasses)]
-        V_ = self.V[0:(self.numClasses)]
-        self.__nodeProb = []
-        self.__nodeProb.append(1)
+        W_ = self.W[:self.numClasses]
+        V_ = self.V[:self.numClasses]
+        self.__nodeProb = [1]
         score_ = self.__nodeProb[0] * (torch.matmul(W_, X_) *
                                        torch.tanh(self.sigma *
                                                   torch.matmul(V_, X_)))

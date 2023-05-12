@@ -37,14 +37,14 @@ def read_pred_file(filepath):
 
 def get_preds(pred_dir):
     events = os.listdir(pred_dir)
-    boxes = dict()
+    boxes = {}
     pbar = tqdm.tqdm(events)
 
     for event in pbar:
         pbar.set_description('Reading Predictions ')
         event_dir = os.path.join(pred_dir, event)
         event_images = os.listdir(event_dir)
-        current_event = dict()
+        current_event = {}
         for imgtxt in event_images:
             imgname, _boxes = read_pred_file(os.path.join(event_dir, imgtxt))
             current_event[imgname.rstrip('.jpg')] = _boxes
@@ -101,9 +101,8 @@ def image_eval(pred, gt, iou_thresh):
 
         gt_overlap = overlaps[h]
         max_overlap, max_idx = gt_overlap.max(), gt_overlap.argmax()
-        if max_overlap >= iou_thresh:
-            if recall_list[max_idx] == 0:
-                recall_list[max_idx] = 1
+        if max_overlap >= iou_thresh and recall_list[max_idx] == 0:
+            recall_list[max_idx] = 1
 
         r_keep_index = np.where(recall_list == 1)[0]
         pred_recall[h] = len(r_keep_index)
@@ -150,9 +149,7 @@ def voc_ap(rec, prec):
     # where X axis (recall) changes value
     i = np.where(mrec[1:] != mrec[:-1])[0]
 
-    # and sum (\Delta recall) * prec
-    ap = np.sum((mrec[i + 1] - mrec[i]) * mpre[i + 1])
-    return ap
+    return np.sum((mrec[i + 1] - mrec[i]) * mpre[i + 1])
 
 
 def evaluation(pred, iou_thresh=0.5):
@@ -162,8 +159,8 @@ def evaluation(pred, iou_thresh=0.5):
     gt_list = []
     for line in lines:
         line = line.strip().split()
-        names.append(os.path.split(line[0])[1][0:-4])
-        th, tw, tc = cv2.imread(SCUT_ROOT + '/' + line[0]).shape
+        names.append(os.path.split(line[0])[1][:-4])
+        th, tw, tc = cv2.imread(f'{SCUT_ROOT}/{line[0]}').shape
         num_faces = int(line[1])
         faces = []
         for i in range(num_faces):
@@ -177,17 +174,15 @@ def evaluation(pred, iou_thresh=0.5):
 
     thresh_num = 1000
 
-    aps = []
-
     count_face = 0
     pr_curve = np.zeros((thresh_num, 2)).astype('float')
 
     for j in range(len(names)):
         gt_boxes = np.asarray(gt_list[j]).astype('float')
-        pred_file = open(os.path.join(pred, names[j] + '.txt'))
+        pred_file = open(os.path.join(pred, f'{names[j]}.txt'))
         pred_lines = pred_file.readlines()
         pred_info = np.array(list(map(lambda x: [float(a) for a in x.rstrip('\r\n').split(' ')], pred_lines[2:]))).astype('float')
-    
+
 
         count_face += len(gt_boxes)
 
@@ -205,7 +200,7 @@ def evaluation(pred, iou_thresh=0.5):
     recall = pr_curve[:, 1]
 
     ap = voc_ap(recall, propose)
-    aps.append(ap)
+    aps = [ap]
     print(ap)
 
 

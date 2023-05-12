@@ -34,9 +34,7 @@ class LSTM_FC(nn.Module):
 
     def forward(self, input):
         features = self.encoder(input)[0][:,-1,:]
-        # pdb.set_trace()
-        logits = self.fc(features)
-        return logits
+        return self.fc(features)
 
 class CustomDataset(Dataset):
     def __init__(self, data, labels):
@@ -102,7 +100,7 @@ def main():
     train_dataset, test_dataset, num_features = load_data(args.data_path)
     train_loader = DataLoader(train_dataset, args.batch_size, shuffle=True)
     test_loader = DataLoader(test_dataset, args.batch_size, shuffle=True)
-    
+
     model = LSTM_FC(input_dim=1, num_classes=1, num_hidden_nodes=args.hd).to(device)
     if args.optim == 1:
         optimizer = optim.SGD(model.parameters(),
@@ -113,7 +111,7 @@ def main():
         optimizer = optim.Adam(model.parameters(),
                                lr=args.lr)
         print("using Adam")
-    
+
     trainer = DROCCTrainer(model, optimizer, args.lamda, args.radius, args.gamma, device)
 
     if args.eval == 0:
@@ -131,7 +129,7 @@ def main():
             print('Saved model not found. Cannot run evaluation.')
             exit()
         score = trainer.test(test_loader, 'AUC')
-        print('Test AUC: {}'.format(score))
+        print(f'Test AUC: {score}')
 
 
 if __name__ == '__main__':

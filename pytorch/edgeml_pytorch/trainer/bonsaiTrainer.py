@@ -34,11 +34,7 @@ class BonsaiTrainer:
         self.sT = sT
         self.sZ = sZ
 
-        if device is None:
-            self.device = "cpu"
-        else:
-            self.device = device
-
+        self.device = "cpu" if device is None else device
         self.useMCHLoss = useMCHLoss
 
         if outFile is not None:
@@ -53,10 +49,9 @@ class BonsaiTrainer:
 
         self.optimizer = self.optimizer()
 
-        if self.sW > 0.99 and self.sV > 0.99 and self.sZ > 0.99 and self.sT > 0.99:
-            self.isDenseTraining = True
-        else:
-            self.isDenseTraining = False
+        self.isDenseTraining = (
+            self.sW > 0.99 and self.sV > 0.99 and self.sZ > 0.99 and self.sT > 0.99
+        )
 
     def loss(self, logits, labels):
         '''
@@ -72,21 +67,16 @@ class BonsaiTrainer:
                 marginLoss = utils.multiClassHingeLoss(logits, labels)
             else:
                 marginLoss = utils.crossEntropyLoss(logits, labels)
-            loss = marginLoss + regLoss
         else:
             marginLoss = utils.binaryHingeLoss(logits, labels)
-            loss = marginLoss + regLoss
-
+        loss = marginLoss + regLoss
         return loss, marginLoss, regLoss
 
     def optimizer(self):
         '''
         Optimizer for Bonsai Params
         '''
-        optimizer = torch.optim.Adam(
-            self.bonsaiObj.parameters(), lr=self.learningRate)
-
-        return optimizer
+        return torch.optim.Adam(self.bonsaiObj.parameters(), lr=self.learningRate)
 
     def accuracy(self, logits, labels):
         '''
@@ -94,13 +84,11 @@ class BonsaiTrainer:
         '''
         if (self.bonsaiObj.numClasses > 2):
             correctPredictions = (logits.argmax(dim=1) == labels.argmax(dim=1))
-            accuracy = torch.mean(correctPredictions.float())
+            return torch.mean(correctPredictions.float())
         else:
             pred = (torch.cat((torch.zeros(logits.shape),
                                logits), 1)).argmax(dim=1)
-            accuracy = torch.mean((labels.view(-1).long() == pred).float())
-
-        return accuracy
+            return torch.mean((labels.view(-1).long() == pred).float())
 
     def runHardThrsd(self):
         '''
@@ -155,68 +143,75 @@ class BonsaiTrainer:
 
     def assertInit(self):
         err = "sparsity must be between 0 and 1"
-        assert self.sW >= 0 and self.sW <= 1, "W " + err
-        assert self.sV >= 0 and self.sV <= 1, "V " + err
-        assert self.sZ >= 0 and self.sZ <= 1, "Z " + err
-        assert self.sT >= 0 and self.sT <= 1, "T " + err
+        assert self.sW >= 0 and self.sW <= 1, f"W {err}"
+        assert self.sV >= 0 and self.sV <= 1, f"V {err}"
+        assert self.sZ >= 0 and self.sZ <= 1, f"Z {err}"
+        assert self.sT >= 0 and self.sT <= 1, f"T {err}"
 
     def saveParams(self, currDir):
         '''
         Function to save Parameter matrices into a given folder
         '''
-        paramDir = currDir + '/'
-        np.save(paramDir + "W.npy", self.bonsaiObj.W.data.cpu())
-        np.save(paramDir + "V.npy", self.bonsaiObj.V.data.cpu())
-        np.save(paramDir + "T.npy", self.bonsaiObj.T.data.cpu())
-        np.save(paramDir + "Z.npy", self.bonsaiObj.Z.data.cpu())
+        paramDir = f'{currDir}/'
+        np.save(f"{paramDir}W.npy", self.bonsaiObj.W.data.cpu())
+        np.save(f"{paramDir}V.npy", self.bonsaiObj.V.data.cpu())
+        np.save(f"{paramDir}T.npy", self.bonsaiObj.T.data.cpu())
+        np.save(f"{paramDir}Z.npy", self.bonsaiObj.Z.data.cpu())
         hyperParamDict = {'dataDim': self.bonsaiObj.dataDimension,
                           'projDim': self.bonsaiObj.projectionDimension,
                           'numClasses': self.bonsaiObj.numClasses,
                           'depth': self.bonsaiObj.treeDepth,
                           'sigma': self.bonsaiObj.sigma}
-        hyperParamFile = paramDir + 'hyperParam.npy'
+        hyperParamFile = f'{paramDir}hyperParam.npy'
         np.save(hyperParamFile, hyperParamDict)
 
     def saveParamsForSeeDot(self, currDir):
         '''
         Function to save Parameter matrices into a given folder for SeeDot compiler
         '''
-        seeDotDir = currDir + '/SeeDot/'
+        seeDotDir = f'{currDir}/SeeDot/'
 
         if os.path.isdir(seeDotDir) is False:
             try:
                 os.mkdir(seeDotDir)
             except OSError:
-                print("Creation of the directory %s failed" %
-                      seeDotDir)
+                print(f"Creation of the directory {seeDotDir} failed")
 
-        np.savetxt(seeDotDir + "W",
-                   utils.restructreMatrixBonsaiSeeDot(self.bonsaiObj.W.data.cpu(),
-                                                      self.bonsaiObj.numClasses,
-                                                      self.bonsaiObj.totalNodes),
-                   delimiter="\t")
-        np.savetxt(seeDotDir + "V",
-                   utils.restructreMatrixBonsaiSeeDot(self.bonsaiObj.V.data.cpu(),
-                                                      self.bonsaiObj.numClasses,
-                                                      self.bonsaiObj.totalNodes),
-                   delimiter="\t")
-        np.savetxt(seeDotDir + "T", self.bonsaiObj.T.data.cpu(), delimiter="\t")
-        np.savetxt(seeDotDir + "Z", self.bonsaiObj.Z.data.cpu(), delimiter="\t")
-        np.savetxt(seeDotDir + "Sigma",
-                   np.array([self.bonsaiObj.sigma]), delimiter="\t")
+        np.savetxt(
+            f"{seeDotDir}W",
+            utils.restructreMatrixBonsaiSeeDot(
+                self.bonsaiObj.W.data.cpu(),
+                self.bonsaiObj.numClasses,
+                self.bonsaiObj.totalNodes,
+            ),
+            delimiter="\t",
+        )
+        np.savetxt(
+            f"{seeDotDir}V",
+            utils.restructreMatrixBonsaiSeeDot(
+                self.bonsaiObj.V.data.cpu(),
+                self.bonsaiObj.numClasses,
+                self.bonsaiObj.totalNodes,
+            ),
+            delimiter="\t",
+        )
+        np.savetxt(f"{seeDotDir}T", self.bonsaiObj.T.data.cpu(), delimiter="\t")
+        np.savetxt(f"{seeDotDir}Z", self.bonsaiObj.Z.data.cpu(), delimiter="\t")
+        np.savetxt(
+            f"{seeDotDir}Sigma", np.array([self.bonsaiObj.sigma]), delimiter="\t"
+        )
 
     def loadModel(self, currDir):
         '''
         Load the Saved model and load it to the model using constructor
         Returns two dict one for params and other for hyperParams
         '''
-        paramDir = currDir + '/'
-        paramDict = {}
-        paramDict['W'] = np.load(paramDir + "W.npy")
-        paramDict['V'] = np.load(paramDir + "V.npy")
-        paramDict['T'] = np.load(paramDir + "T.npy")
-        paramDict['Z'] = np.load(paramDir + "Z.npy")
-        hyperParamDict = np.load(paramDir + "hyperParam.npy").item()
+        paramDir = f'{currDir}/'
+        paramDict = {'W': np.load(f"{paramDir}W.npy")}
+        paramDict['V'] = np.load(f"{paramDir}V.npy")
+        paramDict['T'] = np.load(f"{paramDir}T.npy")
+        paramDict['Z'] = np.load(f"{paramDir}Z.npy")
+        hyperParamDict = np.load(f"{paramDir}hyperParam.npy").item()
         return paramDict, hyperParamDict
 
     # Function to get aimed model size

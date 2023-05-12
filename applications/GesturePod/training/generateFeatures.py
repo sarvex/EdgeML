@@ -89,35 +89,34 @@ def indicesMaxMin(__list, hyperParams):
     windowWidth = hyperParams['windowWidth']
     length = len(__list)
     assert(length == windowWidth)
-    while(i < length):
-        if(__list[i] > 0.62):
+    while (i < length):
+        if (__list[i] > 0.62):
             maxCount = 0
             postemp = i
-            while(i < length and __list[i] > 0.62):
-                i = i + 1
+            while (i < length and __list[i] > 0.62):
+                i += 1
                 maxCount = maxCount + 1
             if(maxCount > maxval):
                 maxval = maxCount
                 imax = postemp
-        elif(i < length and __list[i] < 0.32):
+        elif (i < length and __list[i] < 0.32):
             minCount = 0
             negtemp = i
-            while(i < length and __list[i] < 0.32):
-                i = i + 1
+            while (i < length and __list[i] < 0.32):
+                i += 1
                 minCount = minCount + 1
             if(minCount > minval):
                 minval = minCount
                 imin = negtemp
         else:
-            i = i + 1
+            i += 1
     if(maxval < thresholdCount):
         imax = -1
         maxval = 0
     if(minval < thresholdCount):
         imin = -1
         minval = 0
-    maxmin = [imax, maxval, minval, imin]
-    return maxmin
+    return [imax, maxval, minval, imin]
 
 
 def longestPosNegFeatures(dataFrame, hyperParams):
@@ -163,7 +162,7 @@ def binningFeatures(dataFrame, hyperParams):
     numbins = hyperParams['numHistogramBins']
     for col in normColumns:
         for i in range(0, numbins):
-            dataFrame['bin_' + str(i) + '_' + col] = 0
+            dataFrame[f'bin_{str(i)}_' + col] = 0
     oldBinBoundaries = None
     binBoundaries = []
     for col in normColumns:
@@ -181,7 +180,7 @@ def binningFeatures(dataFrame, hyperParams):
                 assert binBoundaries[i] == oldBinBoundaries[i]
         tot = 0
         for i in range(0, numbins):
-            colname = 'bin_' + str(i) + '_' + col
+            colname = f'bin_{str(i)}_' + col
             colIndex = dataFrame.columns.get_loc(colname)
             dataFrame.iloc[endWindow - 1, colIndex] = binF[i]
             tot += binF[i]
@@ -198,7 +197,7 @@ def binningFeatures(dataFrame, hyperParams):
         allValues = dataFrame[col].values
         freqDict = {}
         for i in range(0, numbins):
-            colname = 'bin_' + str(i) + '_' + col
+            colname = f'bin_{str(i)}_' + col
             colIndex = dataFrame.columns.get_loc(colname)
             freqDict[colname] = [0] * (lengthDF)
             val = dataFrame.iloc[windowWidth - 1, colIndex]
@@ -208,16 +207,16 @@ def binningFeatures(dataFrame, hyperParams):
         endWindow = windowWidth
         while endWindow < lengthDF:
             for i in range(0, numbins):
-                colname = 'bin_' + str(i) + '_' + col
+                colname = f'bin_{str(i)}_' + col
                 freqDict[colname][endWindow] = freqDict[colname][endWindow - 1]
 
             valueSub = allValues[startWindow]
             valueAdd = allValues[endWindow]
             inS = findIndex(valueSub, oldBinBoundaries)
-            colIndex = 'bin_' + str(inS) + '_' + col
+            colIndex = f'bin_{str(inS)}_' + col
             freqDict[colIndex][endWindow] -= 1
             inA = findIndex(valueAdd, oldBinBoundaries)
-            colIndex = 'bin_' + str(inA) + '_' + col
+            colIndex = f'bin_{str(inA)}_' + col
             freqDict[colIndex][endWindow] += 1
             startWindow += 1
             endWindow += 1
@@ -274,10 +273,8 @@ def featureExtractor(dataFrame, hyperParams, isDebug,
     # The cleaning process should ensure that the data is sorted. The following
     # assertion will verify this.
     assertMsg = 'Monotonicity in millis not maintained.'
-    i = 1
-    while i < len(dataFrame.millis):
+    for i in range(1, len(dataFrame.millis)):
         assert dataFrame.millis[i - 1] <= dataFrame.millis[i], assertMsg
-        i += 1
     # STEP 1: Normalization
     oldColOrder = dataFrame.columns
     dataFrame = normalizeDF(dataFrame, hyperParams)
@@ -312,7 +309,7 @@ def threadFeatureExtractor(df, hyperParams, isDebug,
     print("\n Starting splitting of data frame")
     numDataFrames = NUM_THREADS
     dataFrames = np.array_split(df, numDataFrames)
-    threads = [None for i in range(numDataFrames)]
+    threads = [None for _ in range(numDataFrames)]
     print("Beginning Spawning Threads")
     # begin threads
     for threadCount in range(0, numDataFrames):
@@ -352,19 +349,16 @@ def main(inputFolder, outputFolder, fileList,
             'gz': {'min': -512, 'max': 512},
         },
     }
-    for key in hyperParams:
-        print('%15s: %s' % (key, str(hyperParams[key])))
+    for key, value in hyperParams.items():
+        print('%15s: %s' % (key, str(value)))
 
     startTime = time.time()
-    currentFile = 1
     oldColOrder = None
-    for __file in fileList:
+    for currentFile, __file in enumerate(fileList, start=1):
         inpFile = inputFolder + '/' + __file
         msg = '\rFile: %3d/%-3d ' % (currentFile, len(fileList))
         msg += "(%2.2f%%) %-20s" % ((currentFile / len(fileList) * 100), __file)
         print(msg, end = '')
-        currentFile += 1
-
         df = pd.read_csv(inpFile)
         df['infile'] = __file
         ret = threadFeatureExtractor(df, hyperParams, isDebug, collapse, NUM_THREADS)
@@ -385,10 +379,7 @@ def exportTLCTrainTest(inputFolder, outputFolder, fileList):
     for __file in fileList:
         inpFile = inputFolder + '/' + __file[:-4] + '_extracted.csv'
         ret = pd.read_csv(inpFile)
-        if dataFrame is None:
-            dataFrame = ret
-        else:
-            dataFrame = pd.concat([dataFrame, ret])
+        dataFrame = ret if dataFrame is None else pd.concat([dataFrame, ret])
     dataFrame = dataFrame.sample(frac=1).reset_index(drop=True)
     binCol = [x for x in dataFrame.columns if x.startswith('bin')]
     allCol = ['label', 'longestPosEdge', 'longestPosCount',

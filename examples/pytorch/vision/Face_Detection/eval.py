@@ -49,9 +49,7 @@ args = parser.parse_args()
 if not os.path.exists(args.save_dir):
     os.makedirs(args.save_dir)
 
-use_cuda = torch.cuda.is_available()
-
-if use_cuda:
+if use_cuda := torch.cuda.is_available():
     torch.set_default_tensor_type('torch.cuda.FloatTensor')
 else:
     torch.set_default_tensor_type('torch.FloatTensor')
@@ -113,7 +111,7 @@ def detect(net, img_path, thresh, save_traces):
                        0.6, (0, 255, 0), 1)
 
     t2 = time.time()
-    print('detect:{} timer:{}'.format(img_path, t2 - t1))
+    print(f'detect:{img_path} timer:{t2 - t1}')
 
     cv2.imwrite(os.path.join(args.save_dir, os.path.basename(img_path)), img)
 
@@ -123,7 +121,7 @@ def detect(net, img_path, thresh, save_traces):
 
 if __name__ == '__main__':
 
-    module = import_module('models.' + args.model_arch)
+    module = import_module(f'models.{args.model_arch}')
     net = module.build_s3fd('test', cfg.NUM_CLASSES)
 
     if args.multigpu == True:
@@ -134,7 +132,7 @@ if __name__ == '__main__':
     model_dict = net.state_dict()
 
 
-    model_dict.update(checkpoint_dict) 
+    model_dict.update(checkpoint_dict)
     net.load_state_dict(model_dict)
 
     net.eval()

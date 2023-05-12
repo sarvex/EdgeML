@@ -7,29 +7,25 @@ def getSRNN2Args():
     def checkIntPos(value):
         ivalue = int(value)
         if ivalue <= 0:
-            raise argparse.ArgumentTypeError(
-                "%s is an invalid positive int value" % value)
+            raise argparse.ArgumentTypeError(f"{value} is an invalid positive int value")
         return ivalue
 
     def checkIntNneg(value):
         ivalue = int(value)
         if ivalue < 0:
-            raise argparse.ArgumentTypeError(
-                "%s is an invalid non-neg int value" % value)
+            raise argparse.ArgumentTypeError(f"{value} is an invalid non-neg int value")
         return ivalue
 
     def checkFloatNneg(value):
         fvalue = float(value)
         if fvalue < 0:
-            raise argparse.ArgumentTypeError(
-                "%s is an invalid non-neg float value" % value)
+            raise argparse.ArgumentTypeError(f"{value} is an invalid non-neg float value")
         return fvalue
 
     def checkFloatPos(value):
         fvalue = float(value)
         if fvalue <= 0:
-            raise argparse.ArgumentTypeError(
-                "%s is an invalid positive float value" % value)
+            raise argparse.ArgumentTypeError(f"{value} is an invalid positive float value")
         return fvalue
 
     parser = argparse.ArgumentParser(

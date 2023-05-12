@@ -32,7 +32,7 @@ def parse_wider_file(root, file):
     img_faces = []
     count = 0
     flag = False
-    for k, line in enumerate(lines):
+    for line in lines:
         line = line.strip().strip('\n')
         if count > 0:
             line = line.split(' ')
@@ -49,9 +49,7 @@ def parse_wider_file(root, file):
 
     total_face = 0
     for k in face_count:
-        face_ = []
-        for x in range(total_face, total_face + k):
-            face_.append(face_loc[x])
+        face_ = [face_loc[x] for x in range(total_face, total_face + k)]
         img_faces += [face_]
         total_face += k
     return img_paths, img_faces
@@ -59,30 +57,27 @@ def parse_wider_file(root, file):
 
 def wider_data_file():
     img_paths, bbox = parse_wider_file(WIDER_TRAIN, train_list_file)
-    fw = open(cfg.FACE.TRAIN_FILE, 'w')
-    for index in range(len(img_paths)):
-        path = img_paths[index]
-        boxes = bbox[index]
-        fw.write(path)
-        fw.write(' {}'.format(len(boxes)))
-        for box in boxes:
-            data = ' {} {} {} {} {}'.format(box[0], box[1], box[2], box[3], 1)
-            fw.write(data)
-        fw.write('\n')
-    fw.close()
-
+    with open(cfg.FACE.TRAIN_FILE, 'w') as fw:
+        for index in range(len(img_paths)):
+            path = img_paths[index]
+            boxes = bbox[index]
+            fw.write(path)
+            fw.write(f' {len(boxes)}')
+            for box in boxes:
+                data = f' {box[0]} {box[1]} {box[2]} {box[3]} 1'
+                fw.write(data)
+            fw.write('\n')
     img_paths, bbox = parse_wider_file(WIDER_VAL, val_list_file)
-    fw = open(cfg.FACE.VAL_FILE, 'w')
-    for index in range(len(img_paths)):
-        path = img_paths[index]
-        boxes = bbox[index]
-        fw.write(path)
-        fw.write(' {}'.format(len(boxes)))
-        for box in boxes:
-            data = ' {} {} {} {} {}'.format(box[0], box[1], box[2], box[3], 1)
-            fw.write(data)
-        fw.write('\n')
-    fw.close()
+    with open(cfg.FACE.VAL_FILE, 'w') as fw:
+        for index in range(len(img_paths)):
+            path = img_paths[index]
+            boxes = bbox[index]
+            fw.write(path)
+            fw.write(f' {len(boxes)}')
+            for box in boxes:
+                data = f' {box[0]} {box[1]} {box[2]} {box[3]} 1'
+                fw.write(data)
+            fw.write('\n')
 
 
 if __name__ == '__main__':

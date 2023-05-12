@@ -16,12 +16,12 @@ from helpermethods import download_file, decompress
 
 
 def downloadData(workingDir, downloadDir, linkTrain, linkTest):
-    path = workingDir + '/' + downloadDir
+    path = f'{workingDir}/{downloadDir}'
     path = os.path.abspath(path)
     try:
         os.makedirs(path, exist_ok=True)
     except OSError:
-        print("Could not create %s. Make sure the path does" % path)
+        print(f"Could not create {path}. Make sure the path does")
         print("not already exist and you have permissions to create it.")
         return False
 
@@ -30,7 +30,7 @@ def downloadData(workingDir, downloadDir, linkTrain, linkTest):
 
     training_data = decompress(training_data_bz2)
     test_data = decompress(test_data_bz2)
-    
+
     train = os.path.join(path, "train.txt")
     test = os.path.join(path, "test.txt")
     if os.path.isfile(train):

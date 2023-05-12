@@ -83,25 +83,23 @@ def readData(extractedDir):
         "SITTING", 
         "STANDING", 
         "LAYING"
-    ] 
-    DATASET_PATH = extractedDir + "/UCI HAR Dataset/"
+    ]
+    DATASET_PATH = f"{extractedDir}/UCI HAR Dataset/"
     TRAIN = "train/"
     TEST = "test/"
     # Load "X" (the neural network's training and testing inputs)
 
     def load_X(X_signals_paths):
         X_signals = []
-        
+
         for signal_type_path in X_signals_paths:
-            file = open(signal_type_path, 'r')
-            # Read dataset from disk, dealing with text files' syntax
-            X_signals.append(
-                [np.array(serie, dtype=np.float32) for serie in [
-                    row.replace('  ', ' ').strip().split(' ') for row in file
-                ]]
-            )
-            file.close()
-        
+            with open(signal_type_path, 'r') as file:
+                # Read dataset from disk, dealing with text files' syntax
+                X_signals.append(
+                    [np.array(serie, dtype=np.float32) for serie in [
+                        row.replace('  ', ' ').strip().split(' ') for row in file
+                    ]]
+                )
         return np.transpose(np.array(X_signals), (1, 2, 0))
 
     X_train_signals_paths = [
@@ -118,16 +116,12 @@ def readData(extractedDir):
     # Load "y" (the neural network's training and testing outputs)
 
     def load_y(y_path):
-        file = open(y_path, 'r')
-        # Read dataset from disk, dealing with text file's syntax
-        y_ = np.array(
-            [elem for elem in [
-                row.replace('  ', ' ').strip().split(' ') for row in file
-            ]], 
-            dtype=np.int32
-        )
-        file.close()
-        
+        with open(y_path, 'r') as file:
+                    # Read dataset from disk, dealing with text file's syntax
+            y_ = np.array(
+                [row.replace('  ', ' ').strip().split(' ') for row in file],
+                dtype=np.int32,
+            )
         # Substract 1 to each output class for friendly 0-based indexing 
         return y_ - 1
 
@@ -194,24 +188,24 @@ def generateData(extractedDir):
     y_test = one_hot(y_test, numOutput)
     extractedDir += '/'
     try:
-        os.mkdir(extractedDir + 'RAW')
+        os.mkdir(f'{extractedDir}RAW')
     except OSError:
-        exit("Could not create %s" % extractedDir + 'RAW')
-    np.save(extractedDir + "RAW/x_train", x_train)
-    np.save(extractedDir + "RAW/y_train", y_train)
-    np.save(extractedDir + "RAW/x_test", x_test)
-    np.save(extractedDir + "RAW/y_test", y_test)
-    np.save(extractedDir + "RAW/x_val", x_val)
-    np.save(extractedDir + "RAW/y_val", y_val)
+        exit(f"Could not create {extractedDir}RAW")
+    np.save(f"{extractedDir}RAW/x_train", x_train)
+    np.save(f"{extractedDir}RAW/y_train", y_train)
+    np.save(f"{extractedDir}RAW/x_test", x_test)
+    np.save(f"{extractedDir}RAW/y_test", y_test)
+    np.save(f"{extractedDir}RAW/x_val", x_val)
+    np.save(f"{extractedDir}RAW/y_val", y_val)
     return extractedDir
 
 def loadData(dirname):
-    x_train = np.load(dirname + '/' + 'x_train.npy')
-    y_train = np.load(dirname + '/' + 'y_train.npy')
-    x_test = np.load(dirname + '/' + 'x_test.npy')
-    y_test = np.load(dirname + '/' + 'y_test.npy')
-    x_val = np.load(dirname + '/' + 'x_val.npy')
-    y_val = np.load(dirname + '/' + 'y_val.npy')
+    x_train = np.load(f'{dirname}/x_train.npy')
+    y_train = np.load(f'{dirname}/y_train.npy')
+    x_test = np.load(f'{dirname}/x_test.npy')
+    y_test = np.load(f'{dirname}/y_test.npy')
+    x_val = np.load(f'{dirname}/x_val.npy')
+    y_val = np.load(f'{dirname}/y_val.npy')
     return x_train, y_train, x_test, y_test, x_val, y_val
 
 
@@ -266,14 +260,14 @@ def bagData(X, Y, subinstanceLen, subinstanceStride):
 def makeEMIData(subinstanceLen, subinstanceStride, sourceDir, outDir):
     x_train, y_train, x_test, y_test, x_val, y_val = loadData(sourceDir)
     x, y = bagData(x_train, y_train, subinstanceLen, subinstanceStride)
-    np.save(outDir + '/x_train.npy', x)
-    np.save(outDir + '/y_train.npy', y)
+    np.save(f'{outDir}/x_train.npy', x)
+    np.save(f'{outDir}/y_train.npy', y)
     print('Num train %d' % len(x))
     x, y = bagData(x_test, y_test, subinstanceLen, subinstanceStride)
-    np.save(outDir + '/x_test.npy', x)
-    np.save(outDir + '/y_test.npy', y)
+    np.save(f'{outDir}/x_test.npy', x)
+    np.save(f'{outDir}/y_test.npy', y)
     print('Num test %d' % len(x))
     x, y = bagData(x_val, y_val, subinstanceLen, subinstanceStride)
-    np.save(outDir + '/x_val.npy', x)
-    np.save(outDir + '/y_val.npy', y)
+    np.save(f'{outDir}/x_val.npy', x)
+    np.save(f'{outDir}/y_val.npy', y)
     print('Num val %d' % len(x))

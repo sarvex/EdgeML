@@ -112,7 +112,7 @@ val_loader = data.DataLoader(val_dataset, val_batchsize,
 min_loss = np.inf
 start_epoch = 0
 
-module = import_module('models.' + args.model_arch)
+module = import_module(f'models.{args.model_arch}')
 net = module.build_s3fd('train', cfg.NUM_CLASSES)
 
 
@@ -123,7 +123,7 @@ if args.cuda:
     cudnn.benckmark = True
 
 if args.resume:
-    print('Resuming training, loading {}...'.format(args.resume))
+    print(f'Resuming training, loading {args.resume}...')
     net.load_state_dict(torch.load(args.resume))
 
 optimizer = optim.SGD(net.parameters(), lr=args.lr, momentum=args.momentum,
@@ -138,7 +138,7 @@ print(args)
 def train():
     step_index = 0
     iteration = 0
-    
+
     for epoch in range(start_epoch, args.epochs):
         net.train()
         losses = 0
@@ -152,9 +152,9 @@ def train():
                            for ann in targets]
             else:
                 images = images
-                targets = [ann for ann in targets]
+                targets = list(targets)
 
-              
+
             t0 = time.time()
             out,_,_ = net(images)
             # backprop
@@ -169,15 +169,19 @@ def train():
             if iteration % 10 == 0:
                 tloss = losses / (batch_idx + 1)
                 print('Timer: %.4f' % (t1 - t0))
-                print('epoch:' + repr(epoch) + ' || iter:' +
-                      repr(iteration) + ' || Loss:%.4f' % (tloss))
+                print(
+                    (
+                        f'epoch:{repr(epoch)} || iter:{repr(iteration)}'
+                        + ' || Loss:%.4f' % (tloss)
+                    )
+                )
                 print('->> conf loss:{:.4f} || loc loss:{:.4f}'.format(
                     loss_c.item(), loss_l.item()))
                 print('->>lr:{:.6f}'.format(optimizer.param_groups[0]['lr']))
 
             if iteration != 0 and iteration % args.save_frequency == 0:
                 print('Saving state, iter:', iteration)
-                file = 'rpool_' + args.dataset + '_' + repr(iteration) + '_checkpoint.pth'
+                file = f'rpool_{args.dataset}_{repr(iteration)}_checkpoint.pth'
                 torch.save(net.state_dict(),
                            os.path.join(args.save_folder, file))
             iteration += 1
@@ -201,14 +205,14 @@ def val(epoch):
     step = 0
     t1 = time.time()
     with torch.no_grad():
-        for batch_idx, (images, targets) in enumerate(val_loader):
+        for images, targets in val_loader:
             if args.cuda:
                 images = images.cuda()
                 targets = [ann.cuda()
                            for ann in targets]
             else:
                 images = images
-                targets = [ann for ann in targets]
+                targets = list(targets)
 
             out,_,_ = net(images)
             loss_l, loss_c = criterion(out, targets)
@@ -220,12 +224,12 @@ def val(epoch):
     tloss = (loc_loss + conf_loss) / step
     t2 = time.time()
     print('Timer: %.4f' % (t2 - t1))
-    print('test epoch:' + repr(epoch) + ' || Loss:%.4f' % (tloss))
+    print(f'test epoch:{repr(epoch)}' + ' || Loss:%.4f' % (tloss))
 
     global min_loss
     if tloss < min_loss:
         print('Saving best state,epoch', epoch)
-        file = '{}_best_state.pth'.format(args.model_arch)
+        file = f'{args.model_arch}_best_state.pth'
         torch.save(net.state_dict(), os.path.join(
             args.save_folder, file))
         min_loss = tloss

@@ -14,32 +14,28 @@ import numpy as np
 def checkIntPos(value):
     ivalue = int(value)
     if ivalue <= 0:
-        raise argparse.ArgumentTypeError(
-            "%s is an invalid positive int value" % value)
+        raise argparse.ArgumentTypeError(f"{value} is an invalid positive int value")
     return ivalue
 
 
 def checkIntNneg(value):
     ivalue = int(value)
     if ivalue < 0:
-        raise argparse.ArgumentTypeError(
-            "%s is an invalid non-neg int value" % value)
+        raise argparse.ArgumentTypeError(f"{value} is an invalid non-neg int value")
     return ivalue
 
 
 def checkFloatNneg(value):
     fvalue = float(value)
     if fvalue < 0:
-        raise argparse.ArgumentTypeError(
-            "%s is an invalid non-neg float value" % value)
+        raise argparse.ArgumentTypeError(f"{value} is an invalid non-neg float value")
     return fvalue
 
 
 def checkFloatPos(value):
     fvalue = float(value)
     if fvalue <= 0:
-        raise argparse.ArgumentTypeError(
-            "%s is an invalid positive float value" % value)
+        raise argparse.ArgumentTypeError(f"{value} is an invalid positive float value")
     return fvalue
 
 
@@ -143,22 +139,20 @@ def createTimeStampDir(dataDir):
     '''
     Creates a Directory with timestamp as it's name
     '''
-    if os.path.isdir(dataDir + '/TFBonsaiResults') is False:
+    if os.path.isdir(f'{dataDir}/TFBonsaiResults') is False:
         try:
-            os.mkdir(dataDir + '/TFBonsaiResults')
+            os.mkdir(f'{dataDir}/TFBonsaiResults')
         except OSError:
-            print("Creation of the directory %s failed" %
-                  dataDir + '/TFBonsaiResults')
+            print(f"Creation of the directory {dataDir} failed/TFBonsaiResults")
 
     currDir = 'TFBonsaiResults/' + datetime.datetime.now().strftime("%H_%M_%S_%d_%m_%y")
-    if os.path.isdir(dataDir + '/' + currDir) is False:
+    if os.path.isdir(f'{dataDir}/{currDir}') is False:
         try:
-            os.mkdir(dataDir + '/' + currDir)
+            os.mkdir(f'{dataDir}/{currDir}')
         except OSError:
-            print("Creation of the directory %s failed" %
-                  dataDir + '/' + currDir)
+            print(f"Creation of the directory {dataDir} failed/{currDir}")
         else:
-            return (dataDir + '/' + currDir)
+            return f'{dataDir}/{currDir}'
     return None
 
 
@@ -169,8 +163,8 @@ def preProcessData(dataDir, isRegression=False):
     Outputs a train and test set datapoints appended with 1 for Bias induction
     dataDimension, numClasses are inferred directly
     '''
-    train = np.load(dataDir + '/train.npy')
-    test = np.load(dataDir + '/test.npy')
+    train = np.load(f'{dataDir}/train.npy')
+    test = np.load(f'{dataDir}/test.npy')
 
     dataDimension = int(train.shape[1]) - 1
 
@@ -198,21 +192,13 @@ def preProcessData(dataDir, isRegression=False):
 
         lab_ = np.zeros((Xtrain.shape[0], numClasses))
         lab_[np.arange(Xtrain.shape[0]), lab] = 1
-        if (numClasses == 2):
-            Ytrain = np.reshape(lab, [-1, 1])
-        else:
-            Ytrain = lab_
-
+        Ytrain = np.reshape(lab, [-1, 1]) if (numClasses == 2) else lab_
         lab = Ytest_.astype('uint8')
         lab = np.array(lab) - min(lab)
 
         lab_ = np.zeros((Xtest.shape[0], numClasses))
         lab_[np.arange(Xtest.shape[0]), lab] = 1
-        if (numClasses == 2):
-            Ytest = np.reshape(lab, [-1, 1])
-        else:
-            Ytest = lab_
-
+        Ytest = np.reshape(lab, [-1, 1]) if (numClasses == 2) else lab_
     elif (isRegression == True):
         # The number of classes is always 1, for regression.
         numClasses = 1
@@ -237,23 +223,22 @@ def dumpCommand(list, currDir):
     '''
     Dumps the current command to a file for further use
     '''
-    commandFile = open(currDir + '/command.txt', 'w')
-    command = "python"
+    with open(f'{currDir}/command.txt', 'w') as commandFile:
+        command = "python"
 
-    command = command + " " + ' '.join(list)
-    commandFile.write(command)
+        command = f"{command} " + ' '.join(list)
+        commandFile.write(command)
 
-    commandFile.flush()
-    commandFile.close()
+        commandFile.flush()
 
 
 def saveMeanStd(mean, std, currDir):
     '''
     Function to save Mean and Std vectors
     '''
-    np.save(currDir + '/mean.npy', mean)
-    np.save(currDir + '/std.npy', std)
-    saveMeanStdSeeDot(mean, std, currDir + "/SeeDot")
+    np.save(f'{currDir}/mean.npy', mean)
+    np.save(f'{currDir}/std.npy', std)
+    saveMeanStdSeeDot(mean, std, f"{currDir}/SeeDot")
 
 
 def saveMeanStdSeeDot(mean, std, seeDotDir):
@@ -264,7 +249,6 @@ def saveMeanStdSeeDot(mean, std, seeDotDir):
         try:
             os.mkdir(seeDotDir)
         except OSError:
-            print("Creation of the directory %s failed" %
-                  seeDotDir)
-    np.savetxt(seeDotDir + '/Mean', mean, delimiter="\t")
-    np.savetxt(seeDotDir + '/Std', std, delimiter="\t")
+            print(f"Creation of the directory {seeDotDir} failed")
+    np.savetxt(f'{seeDotDir}/Mean', mean, delimiter="\t")
+    np.savetxt(f'{seeDotDir}/Std', std, delimiter="\t")

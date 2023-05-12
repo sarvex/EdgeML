@@ -73,10 +73,7 @@ class InvertedResidual(nn.Module):
         self.conv = nn.Sequential(*layers)
 
     def forward(self, x):
-        if self.use_res_connect:
-            return x + self.conv(x)
-        else:
-            return self.conv(x)
+        return x + self.conv(x) if self.use_res_connect else self.conv(x)
 
 
 class MobileNetV2(nn.Module):
@@ -98,7 +95,7 @@ class MobileNetV2(nn.Module):
             block: Module specifying inverted residual building block for mobilenet
         """
         super(MobileNetV2, self).__init__()
-        
+
         if block is None:
             block = InvertedResidual
         input_channel = 8
@@ -115,8 +112,9 @@ class MobileNetV2(nn.Module):
 
         # only check the first element, assuming user knows t,c,n,s are required
         if len(inverted_residual_setting) == 0 or len(inverted_residual_setting[0]) != 4:
-            raise ValueError("inverted_residual_setting should be non-empty "
-                             "or a 4-element list, got {}".format(inverted_residual_setting))
+            raise ValueError(
+                f"inverted_residual_setting should be non-empty or a 4-element list, got {inverted_residual_setting}"
+            )
 
         # building first layer
         input_channel = _make_divisible(input_channel, round_nearest)

@@ -80,7 +80,7 @@ def main():
                               update_non_linearity=update_non_linearity,
                               wRank=wRank, uRank=uRank)
     else:
-        sys.exit('Exiting: No Such Cell as ' + cell)
+        sys.exit(f'Exiting: No Such Cell as {cell}')
 
     FastCellTrainer = FastTrainer(
         FastCell, X, Y, sW=sW, sU=sU,

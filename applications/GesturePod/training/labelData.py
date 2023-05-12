@@ -64,7 +64,7 @@ def quitCB(event, eventHandlerObj):
         os.mkdir('data/labelled_data')
     outfilename = "./data/labelled_data/" + fileName[:-4] + '_labelled.csv'
     print("Saving and exiting")
-    print("Outputfile: %s" % outfilename)
+    print(f"Outputfile: {outfilename}")
     eventHandlerObj.dataFrame.to_csv(outfilename, index=False)
     exit()
 

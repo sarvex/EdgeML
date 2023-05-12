@@ -144,7 +144,9 @@ class KeywordSpotter(nn.Module):
         the base class already defines that method with a different meaning.
         The base class "train" method puts the Module into "training mode".
         """
-        print("Training {} using {} rows of featurized training input...".format(self.name(), training_data.num_rows))
+        print(
+            f"Training {self.name()} using {training_data.num_rows} rows of featurized training input..."
+        )
 
         if training_data.mean is not None:
             mean = torch.from_numpy(np.array([[training_data.mean]])).to(device)
@@ -164,9 +166,9 @@ class KeywordSpotter(nn.Module):
         num_epochs = options.max_epochs
         batch_size = options.batch_size
         trim_level = options.trim_level
-        
+
         ticks = training_data.num_rows / batch_size  # iterations per epoch
-        
+
         # Calculation of total iterations in non-rolling vs rolling training
         # ticks = num_rows/batch_size (total number of iterations per epoch)
         # Non-Rolling Training:
@@ -180,8 +182,9 @@ class KeywordSpotter(nn.Module):
         if options.rolling:
             rolling_length = 2
             max_rolling_length = int(ticks)
-            if max_rolling_length > options.max_rolling_length + rolling_length:
-                max_rolling_length = options.max_rolling_length + rolling_length
+            max_rolling_length = min(
+                max_rolling_length, options.max_rolling_length + rolling_length
+            )
             bag_count = 100
             hidden_bag_size = batch_size * bag_count
             if num_epochs + rolling_length < max_rolling_length:
@@ -217,10 +220,12 @@ class KeywordSpotter(nn.Module):
                 # Also, we need to clear out the hidden state,
                 # detaching it from its history on the last instance.
                 if options.rolling:
-                    if rolling_length <= max_rolling_length:
-                        if (i_batch + 1) % rolling_length == 0:
-                            self.init_hidden()
-                            break
+                    if (
+                        rolling_length <= max_rolling_length
+                        and (i_batch + 1) % rolling_length == 0
+                    ):
+                        self.init_hidden()
+                        break
 
                     self.rolling_step()
                 else:
@@ -256,11 +261,11 @@ class KeywordSpotter(nn.Module):
 
                 if sparsify:
                     if epoch >= num_epochs/3:
-                        if epoch < (2*num_epochs)/3:
-                            if i_batch % trim_level == 0:
-                                self.sparsify()
-                            else:
-                                self.sparsifyWithSupport()
+                        if (
+                            epoch < (2 * num_epochs) / 3
+                            and i_batch % trim_level == 0
+                        ):
+                            self.sparsify()
                         else:
                             self.sparsifyWithSupport()
                     self.to(device) # sparsify routines might move param matrices to cpu
@@ -286,7 +291,7 @@ class KeywordSpotter(nn.Module):
         end = time.time()
         self.training = False
         print("Trained in {:.2f} seconds".format(end - start))
-        print("Model size {}".format(self.get_model_size()))
+        print(f"Model size {self.get_model_size()}")
         return log
 
     def evaluate(self, test_data, batch_size, device=None, outfile=None):
@@ -314,7 +319,7 @@ class KeywordSpotter(nn.Module):
                 passed += ok
 
         if outfile:
-            print("Saving evaluation results in '{}'".format(outfile))
+            print(f"Saving evaluation results in '{outfile}'")
             with open(outfile, "w") as f:
                 json.dump(results, f)
 
@@ -394,15 +399,13 @@ class AudioDataset(Dataset):
         """ Return a single labelled sample here as a tuple """
         if self.non_keywords_idx is None:
             updated_idx=idx
+        elif idx < len(self.keywords_idx):
+            updated_idx=self.keywords_idx[idx]
         else:
-            if idx < len(self.keywords_idx):
-                updated_idx=self.keywords_idx[idx]
-            else:
-                updated_idx=np.random.choice(self.non_keywords_idx)
+            updated_idx=np.random.choice(self.non_keywords_idx)
         audio = self.features[updated_idx]  # batch index is second dimension
         label = self.labels[updated_idx]
-        sample = (audio, label)
-        return sample
+        return audio, label
 
             
 
